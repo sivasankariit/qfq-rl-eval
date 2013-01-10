@@ -5,6 +5,10 @@ hash tables for fast classification.  Only supports one field (ip
 dport) as hashkey but you can modify it for ip dst as well.
 
 Arbitrary classification: not now.
+
+This page:
+http://www.nuclearcat.com/mediawiki/index.php/U32_tips_tricks has
+extensive documentation on u32 filters and hash filters.
 """
 import pprint
 from collections import defaultdict
@@ -52,6 +56,7 @@ class QFQ:
         self.cmds.append(cmd)
 
     def add_hash_filters(self, buckets=256, hashfn=None):
+        assert buckets <= 256 and ((buckets & (buckets - 1)) == 0)
         if hashfn is None:
             hashfn = lambda x: x % buckets
         CHAINID = "2:"
