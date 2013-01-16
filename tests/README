@@ -1,0 +1,31 @@
+Couple of things to ensure this works in your testbed.
+
+- Modify the two hosts parameter in netperf.py, or
+  pass --hosts correctly.
+
+- Ensure you can ssh to these hosts without a password
+  and without being prompted to accept the host key
+
+- Install pexpect, termcolor python dependencies.
+  The test script uses pexpect on ssh to execute
+  commands to remote machines.
+
+- Modify parameters in host.py:
+	- NETPERF_DIR should contain netserver and netperf
+	  executables on all machines
+	- DEFAULT_DEV is the 10GbE device for all hosts
+	  you can make this host specific in get_10g_dev()
+	  function in host.py
+	- SHELL_PROMPT should be the last character in your
+	  $PS for pexpect to work.
+
+- Ignore newrl rate limiter.
+
+- Install matplotlib for plotting.
+
+To run the experiment
+# ./run.sh
+
+To plot the results
+# ./plot.sh expt-output-dir
+
