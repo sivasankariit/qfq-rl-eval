@@ -178,12 +178,16 @@ class Host(object):
         c += "htb rate %s mtu %s burst 15k;" % (rate, mtu)
         self.cmd(c)
 
-    def add_qfq_qdisc(self, rate='5000', mtu=1500):
+    def add_qfq_qdisc(self, rate='5000', mtu=1500, nclass=8):
         iface = self.get_10g_dev()
         self.remove_qdiscs()
         self.rmmod()
         c  = "tc qdisc add dev %s root handle 1: qfq;" % iface
-        c += "tc class add dev %s parent 1: classid 1:1 qfq weight %s maxpkt 2048; " % (iface, rate)
+        for klass in xrange(nclass):
+            classid = klass + 1
+            c += "tc class add dev %s parent 1: classid 1:%d qfq weight %s maxpkt 2048; " % (iface, classid, rate)
+            c += "tc filter add dev %s parent 1: protocol all prio 1 u32 match ip sport %d 0x7 flowid 1:%d; " % (iface, klass, classid)
+        # Default class
         c += "tc filter add dev %s parent 1: protocol all prio 2 u32 match u32 0 0 flowid 1:1; " % iface
         self.cmd(c)
 

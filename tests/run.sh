@@ -17,9 +17,12 @@ for rl in htb qfq; do
         --rrsize $rrsize
 
     mv $exptid.tar.gz $dir/
-    pushd $dir; tar xf $exptid.tar.gz; popd $dir;
+    pushd $dir
+    tar xf $exptid.tar.gz
+    popd
 done;
 done
 done
 
 echo Experiment results are in $dir
+killall -9 ssh

@@ -113,6 +113,7 @@ class Netperf(Expt):
 
         self.hlist.rmrf(e(""))
         self.hlist.mkdir(e(""))
+
         self.server.start_netserver()
         self.client.start_cpu_monitor(e(''))
         T = self.opts("t") - 10
