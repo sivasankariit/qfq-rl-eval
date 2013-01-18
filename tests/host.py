@@ -183,10 +183,13 @@ class Host(object):
         self.remove_qdiscs()
         self.rmmod()
         c  = "tc qdisc add dev %s root handle 1: qfq;" % iface
+        bits = int(math.log(nclass, 2))
+        mask = (1 << bits) - 1
+        mask = hex(mask)
         for klass in xrange(nclass):
             classid = klass + 1
             c += "tc class add dev %s parent 1: classid 1:%d qfq weight %s maxpkt 2048; " % (iface, classid, rate)
-            c += "tc filter add dev %s parent 1: protocol all prio 1 u32 match ip sport %d 0x7 flowid 1:%d; " % (iface, klass, classid)
+            c += "tc filter add dev %s parent 1: protocol all prio 1 u32 match ip sport %d %s flowid 1:%d; " % (iface, klass, mask, classid)
         # Default class
         c += "tc filter add dev %s parent 1: protocol all prio 2 u32 match u32 0 0 flowid 1:1; " % iface
         self.cmd(c)
