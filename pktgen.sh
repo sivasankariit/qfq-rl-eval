@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # Documentation here: http://www.linuxfoundation.org/collaborate/workgroups/networking/pktgen
-
+rmmod pktgen
 modprobe pktgen
 dev=eth2
 
@@ -24,7 +24,7 @@ function pg() {
 # Config Start Here -----------------------------------------------------------
 
 # thread config
-PGDEV=/proc/net/pktgen/kpktgend_0
+PGDEV=/proc/net/pktgen/kpktgend_2
   echo "Removing all devices"
  pgset "rem_device_all" 
   echo "Adding $dev"
