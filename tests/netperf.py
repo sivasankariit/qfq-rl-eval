@@ -6,6 +6,7 @@ import termcolor as T
 from expt import Expt
 from time import sleep
 from host import *
+import os
 
 parser = argparse.ArgumentParser(description="Netperf Test for various rate limiters.")
 parser.add_argument('--proto',
@@ -154,3 +155,4 @@ class Netperf(Expt):
         return
 
 Netperf(vars(args)).run()
+os.system("killall -9 ssh")
