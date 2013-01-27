@@ -69,7 +69,10 @@ for nrl, rate in itertools.product(nrls, rates):
     net = ESParser(fname)
 
     rates = net.parse()
-    print nrl, rate, net.summary()
+    summ = net.summary()
+    m, std = summ["mean"], summ["stdev"]
+    percent = std * 100.0 / m
+    print nrl, rate, summ, "%.3f%%" % percent
 
 sys.exit(0)
 
