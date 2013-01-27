@@ -3,6 +3,7 @@
 dir=`date +%b%d-%H:%M`
 time=40
 ns=0
+start=`date`
 
 function finish {
     killall -9 ssh
@@ -36,3 +37,5 @@ done;
 done;
 
 echo Experiment results are in $dir
+echo started at $start
+echo ended at `date`
