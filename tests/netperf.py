@@ -83,6 +83,12 @@ parser.add_argument('--hosts',
                     nargs="+",
                     default=["e2","e1"])
 
+parser.add_argument('--rate',
+                    dest="rate",
+                    type=int,
+                    help="rate per rate limiter",
+                    default=1000)
+
 args = parser.parse_args()
 
 def e(s):
@@ -106,16 +112,19 @@ class Netperf(Expt):
         self.hlist.rmmod()
         self.hlist.killall()
         self.hlist.remove_qdiscs()
+        self.hlist.insmod_qfq()
         if self.opts("rl") == "htb":
             self.client.add_htb_qdisc("5Gbit", args.htb_mtu)
 	elif self.opts("rl") == "qfq":
-	    self.client.add_qfq_qdisc("5000", args.htb_mtu)
+	    self.client.add_qfq_qdisc(str(args.rate), args.htb_mtu, nclass=args.nrls)
 
         self.hlist.rmrf(e(""))
         self.hlist.mkdir(e(""))
 
         self.server.start_netserver()
+        self.server.start_iperfserver()
         self.client.start_cpu_monitor(e(''))
+        self.client.start_bw_monitor(e(''))
         T = self.opts("t") - 10
 
         sleep(1)
@@ -127,18 +136,20 @@ class Netperf(Expt):
             self.client.start_n_netperfs(self.opts("nrr"), opts, e(''), "rr", args.pin)
 
         if self.opts("ns"):
-            opts = "-t %s_STREAM" % (self.opts("proto").upper())
-            opts += " -v 2 -H %s -l %s -c -C" % (self.server.hostname(), T)
-            opts += " -- -s %s " % self.opts("ssize")
-            if self.opts("proto") == "tcp":
-                opts += " -D " # disable nagle's
-            self.client.start_n_netperfs(self.opts("ns"), opts, e(''), "stream", args.pin)
+            #opts = "-t %s_STREAM" % (self.opts("proto").upper())
+            #opts += " -v 2 -H %s -l %s -c -C" % (self.server.hostname(), T)
+            #opts += " -- -s %s " % self.opts("ssize")
+            #if self.opts("proto") == "tcp":
+            #    opts += " -D " # disable nagle's
+            #self.client.start_n_netperfs(self.opts("ns"), opts, e(''), "stream", args.pin)
+            opts = "-c %s -t %s" % (self.server.hostname(), T)
+            self.client.start_n_iperfs(self.opts("ns"), opts, e(''))
         return
 
     def stop(self):
         print 'waiting...'
-        sleep(10)
-        self.hlist.killall("iperf netperf netserver")
+        sleep(2)
+        self.hlist.killall("iperf netperf netserver ethstats")
         self.client.copy_local(e(''), self.opts("exptid"))
         return
 

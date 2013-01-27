@@ -6,6 +6,7 @@ import os
 import socket
 from time import sleep
 import pexpect
+import math
 
 RL_MODULE_NAME='newrl'
 RL_MODULE = '/root/vimal/newrl.ko'
@@ -37,6 +38,11 @@ def local_cmd(c):
     p = Popen(c, shell=True)
     p.wait()
 
+def controladdr(addr):
+    # TODO: this is a simple mapping scheme from the 10GbE
+    # interface hostname to the control interface hostname.
+    # e10 -> l10.  We may want a general mapping here.
+    return addr.replace('e', 'l')
 
 class ShellWrapper:
     def __init__(self, chan):
@@ -67,6 +73,7 @@ class Host(object):
     _shell_cache = {}
     def __init__(self, addr):
         self.addr = addr
+        self.sshaddr = controladdr(addr)
         # List of processes spawned async on this host
         self.procs = []
         self.delay = False
@@ -77,11 +84,11 @@ class Host(object):
         self.dryrun = state
 
     def get(self):
-        ssh = Host._ssh_cache.get(self.addr, None)
+        ssh = Host._ssh_cache.get(self.sshaddr, None)
         if ssh is None:
-            ssh = pexpect.spawn("ssh %s" % self.addr, timeout=120)
+            ssh = pexpect.spawn("ssh %s" % self.sshaddr, timeout=120)
             ssh.expect(SHELL_PROMPT)
-            Host._ssh_cache[self.addr] = ssh
+            Host._ssh_cache[self.sshaddr] = ssh
         return ssh
 
     def get_shell(self):
@@ -138,7 +145,7 @@ class Host(object):
         return out
 
     def log(self, c):
-        addr = T.colored(self.addr, "magenta")
+        addr = T.colored(self.sshaddr, "magenta")
         c = T.colored(c, "grey", attrs=["bold"])
         print "%s: %s" % (addr, c)
 
@@ -165,6 +172,11 @@ class Host(object):
             cmd = "rmmod %s; " % mod + cmd
         self.cmd(cmd)
 
+    def insmod_qfq(self):
+        QFQ_PATH = "/root/vimal/rl-qfq/sch_qfq.ko"
+        self.cmd("rmmod sch_qfq; insmod %s" % QFQ_PATH)
+        return
+
     def remove_qdiscs(self):
         iface = self.get_10g_dev()
         self.cmd("tc qdisc del dev %s root" % iface)
@@ -186,12 +198,20 @@ class Host(object):
         bits = int(math.log(nclass, 2))
         mask = (1 << bits) - 1
         mask = hex(mask)
+        self.cmd(c)
+        c = ''
         for klass in xrange(nclass):
             classid = klass + 1
             c += "tc class add dev %s parent 1: classid 1:%d qfq weight %s maxpkt 2048; " % (iface, classid, rate)
             c += "tc filter add dev %s parent 1: protocol all prio 1 u32 match ip sport %d %s flowid 1:%d; " % (iface, klass, mask, classid)
+            if klass % 50 == 0:
+                self.cmd(c)
+                c = ''
         # Default class
         c += "tc filter add dev %s parent 1: protocol all prio 2 u32 match u32 0 0 flowid 1:1; " % iface
+        self.cmd(c)
+        # Disable tso/gso
+        c = "ethtool -K %s gso off; ethtool -K %s tso off" % (iface, iface)
         self.cmd(c)
 
     def killall(self, extra=""):
@@ -200,7 +220,7 @@ class Host(object):
                 p.kill()
             except:
                 pass
-        self.cmd("killall -9 iperf top bwm-ng netperf netserver %s" % extra)
+        self.cmd("killall -9 iperf top bwm-ng netperf netserver ethstats %s" % extra)
 
     def configure_tx_interrupt_affinity(self):
         dev = self.get_10g_dev()
@@ -212,6 +232,9 @@ class Host(object):
     def start_netserver(self):
         self.cmd_async("%s/netserver" % NETPERF_DIR)
 
+    def start_iperfserver(self):
+        self.cmd_async("iperf -s")
+
     def start_netperf(self, args, outfile):
         self.cmd_async("%s/netperf %s 2>&1 > %s" % (NETPERF_DIR, args, outfile))
 
@@ -222,6 +245,11 @@ class Host(object):
         cmd += " %s/netperf -s 10 %s 2>&1" % (NETPERF_DIR, args)
         cmd += " > %s/%s-$i.txt &);" % (dir, outfile_prefix)
         cmd += " done;"
+        self.cmd(cmd)
+        return
+
+    def start_n_iperfs(self, n, args, dir):
+        cmd = "iperf %s -P %s > %s/iperf.txt " % (args, n, dir)
         self.cmd(cmd)
         return
 
@@ -237,7 +265,8 @@ class Host(object):
         dir = os.path.abspath(dir)
         path = os.path.join(dir, "net.txt")
         self.cmd("mkdir -p %s" % dir)
-        cmd = "bwm-ng -t %s -o csv -u bits -T rate -C ',' > %s" % (interval_sec * 1000, path)
+        #cmd = "bwm-ng -t %s -o csv -u bits -T rate -C ',' > %s" % (interval_sec * 1000, path)
+        cmd = "ethstats -n1 > %s" % (path)
         return self.cmd_async(cmd)
 
     def start_perf_monitor(self, dir="/tmp", time=30):

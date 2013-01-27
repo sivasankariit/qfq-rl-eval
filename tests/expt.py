@@ -36,14 +36,14 @@ class Expt(object):
     def opts(self, name):
         return self._opts.get(name, None)
 
-    def run(self):
+    def run(self, delta=10):
         try:
             dir = self.opts('dir')
             if not os.path.exists(dir):
                 os.makedirs(dir)
             self.start()
             t = self.opts('t')
-            progress(t)
+            progress(t + delta)
         except KeyboardInterrupt:
             self.log("Stopping tests...")
         self.stop_monitors()
