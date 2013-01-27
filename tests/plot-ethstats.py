@@ -57,7 +57,7 @@ class ESParser:
     def summary(self):
         return dict(mean=mean(self.util), stdev=stdev(self.util))
 
-nrls = [1]
+nrls = [1, 10, 100, 1000]
 rates = [1000, 3000, 5000, 7000, 9000]
 
 def DIR(nrl, rate):
@@ -69,7 +69,7 @@ for nrl, rate in itertools.product(nrls, rates):
     net = ESParser(fname)
 
     rates = net.parse()
-    print net.summary()
+    print nrl, rate, net.summary()
 
 sys.exit(0)
 

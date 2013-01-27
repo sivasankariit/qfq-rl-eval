@@ -195,12 +195,12 @@ class Host(object):
         self.remove_qdiscs()
         self.rmmod()
         c  = "tc qdisc add dev %s root handle 1: qfq;" % iface
-        bits = int(math.log(nclass, 2))
+        bits = int(math.log(nclass, 2)) + 1
         mask = (1 << bits) - 1
         mask = hex(mask)
         self.cmd(c)
         c = ''
-        for klass in xrange(nclass):
+        for klass in xrange((1 << bits) +1):
             classid = klass + 1
             c += "tc class add dev %s parent 1: classid 1:%d qfq weight %s maxpkt 2048; " % (iface, classid, rate)
             c += "tc filter add dev %s parent 1: protocol all prio 1 u32 match ip sport %d %s flowid 1:%d; " % (iface, klass, mask, classid)
@@ -249,8 +249,15 @@ class Host(object):
         return
 
     def start_n_iperfs(self, n, args, dir):
+        batchsize = 100
+        times = n/batchsize
+        while times:
+            cmd = "iperf %s -P %s > %s/iperf-%d.txt" % (args, n, dir, times)
+            times -= 1
+            n -= batchsize
+            self.cmd_async(cmd)
         cmd = "iperf %s -P %s > %s/iperf.txt " % (args, n, dir)
-        self.cmd(cmd)
+        self.cmd_async(cmd)
         return
 
     # Monitoring scripts
