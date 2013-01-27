@@ -190,16 +190,26 @@ class Host(object):
         c += "htb rate %s mtu %s burst 15k;" % (rate, mtu)
         self.cmd(c)
 
+    def ifdown(self):
+        self.cmd("ifconfig %s down" % self.get_10g_dev())
+    def ifup(self):
+        self.cmd("ifconfig %s up" % self.get_10g_dev())
+
     def add_qfq_qdisc(self, rate='5000', mtu=1500, nclass=8):
         iface = self.get_10g_dev()
         self.remove_qdiscs()
         self.rmmod()
+        self.ifdown()
         c  = "tc qdisc add dev %s root handle 1: qfq;" % iface
         bits = int(math.log(nclass, 2)) + 1
         mask = (1 << bits) - 1
         mask = hex(mask)
         self.cmd(c)
-        c = ''
+        c = "for klass in {0..%d}; do " % (1 << bits)
+        c += "tc class add dev %s parent 1: classid 1:$(($klass+1)) qfq weight %s maxpkt 2048; " % (iface, rate)
+        c += "tc filter add dev %s parent 1: protocol all prio 1 u32 match ip sport $klass %s flowid 1:$(($klass+1)); " % (iface, mask)
+        c += "done;"
+        """
         for klass in xrange((1 << bits) +1):
             classid = klass + 1
             c += "tc class add dev %s parent 1: classid 1:%d qfq weight %s maxpkt 2048; " % (iface, classid, rate)
@@ -207,9 +217,11 @@ class Host(object):
             if klass % 50 == 0:
                 self.cmd(c)
                 c = ''
+        """
         # Default class
         c += "tc filter add dev %s parent 1: protocol all prio 2 u32 match u32 0 0 flowid 1:1; " % iface
         self.cmd(c)
+        self.ifup()
         # Disable tso/gso
         c = "ethtool -K %s gso off; ethtool -K %s tso off" % (iface, iface)
         self.cmd(c)

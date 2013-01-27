@@ -71,8 +71,7 @@ for nrl, rate in itertools.product(nrls, rates):
     rates = net.parse()
     summ = net.summary()
     m, std = summ["mean"], summ["stdev"]
-    percent = std * 100.0 / m
-    print nrl, rate, summ, "%.3f%%" % percent
+    print nrl, rate, summ
 
 sys.exit(0)
 
