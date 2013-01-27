@@ -22,7 +22,8 @@ for rate in 1000 3000 5000 7000 9000; do
         --rl $rl \
         --rate $rate \
         --nrls $nrls \
-	--ns $nrls # Same num of senders as rate limiters
+	--ns 4 # 4 flows should give line rate
+
 
     mv $exptid.tar.gz $dir/
 
