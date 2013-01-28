@@ -172,9 +172,14 @@ class Host(object):
             cmd = "rmmod %s; " % mod + cmd
         self.cmd(cmd)
 
+    def disable_ipv6(self):
+        dev = self.get_10g_dev()
+        self.cmd("sysctl -w net.ipv6.conf.%s.disable_ipv6=1;" % dev)
+
     def insmod_qfq(self):
         QFQ_PATH = "/root/vimal/rl-qfq/sch_qfq.ko"
         self.cmd("rmmod sch_qfq; insmod %s" % QFQ_PATH)
+        self.disable_ipv6()
         return
 
     def remove_qdiscs(self):
@@ -193,7 +198,7 @@ class Host(object):
     def ifdown(self):
         self.cmd("ifconfig %s down" % self.get_10g_dev())
     def ifup(self):
-        self.cmd("ifconfig %s up" % self.get_10g_dev())
+        self.cmd("ifconfig %s up; sleep 5" % self.get_10g_dev())
 
     def add_qfq_qdisc(self, rate='5000', mtu=1500, nclass=8):
         iface = self.get_10g_dev()
