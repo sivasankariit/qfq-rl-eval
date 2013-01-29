@@ -3,6 +3,9 @@
 dir=`date +%b%d-%H:%M`
 time=30
 ns=0
+dev=eth2
+
+python ../utils/set-affinity.py $dev
 
 mkdir -p $dir
 for nrr in 8 128; do
@@ -24,5 +27,5 @@ done;
 done
 done
 
-echo Experiment results are in $dir
+echo "Experiment results are in $dir"
 killall -9 ssh

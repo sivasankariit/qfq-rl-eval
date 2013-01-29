@@ -268,11 +268,14 @@ class Host(object):
     def start_n_iperfs(self, n, args, dir):
         batchsize = 100
         times = n/batchsize
+        orig_n = n
         while times:
-            cmd = "iperf %s -P %s > %s/iperf-%d.txt" % (args, n, dir, times)
+            cmd = "iperf %s -P %s > %s/iperf-%d.txt" % (args, batchsize, dir, times)
             times -= 1
             n -= batchsize
             self.cmd_async(cmd)
+        if orig_n == 1:
+            n = 4
         cmd = "iperf %s -P %s > %s/iperf.txt " % (args, n, dir)
         self.cmd_async(cmd)
         return
