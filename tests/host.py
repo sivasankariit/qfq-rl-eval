@@ -201,6 +201,12 @@ class Host(object):
     def ifup(self):
         self.cmd("ifconfig %s up; sleep 5" % self.get_10g_dev())
 
+    def qfq_stats(self, dir):
+        iface = self.get_10g_dev()
+        TC = '/root/vimal/rl-qfq/iproute2/tc/tc'
+        c = "%s -s class show dev %s > %s/qfq-stats.txt" % (TC, iface, dir)
+        self.cmd(c)
+
     def add_qfq_qdisc(self, rate='5000', mtu=1500, nclass=8, startport=1000):
         iface = self.get_10g_dev()
         self.remove_qdiscs()
