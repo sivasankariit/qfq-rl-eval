@@ -18,9 +18,11 @@ mkdir -p $dir
 for rl in qfq; do
 for rate in 1000 3000 5000 7000 9000; do
 for nrls in 1 10 100 1000; do
+#for rate in 9000; do
+#for nrls in 1000; do
     exptid=rl-$rl-nrls-$nrls-rate-$rate
     rate_per_rl=$(($rate/$nrls))
-    python netperf.py --nrr 0 \
+    python udp.py --nrr 0 \
         --exptid $exptid \
         -t $time \
         --rl $rl \

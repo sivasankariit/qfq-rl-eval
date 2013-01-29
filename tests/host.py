@@ -15,6 +15,7 @@ NETPERF_DIR = '/root/vimal'
 NETPERF_DIR = '/usr/local/bin'
 NETPERF_DIR = '/root/vimal/exports/netperf'
 SHELL_PROMPT = '#'
+UDP = '/root/vimal/rl-qfq/utils/udp'
 
 class HostList(object):
     def __init__(self, *lst):
@@ -200,19 +201,16 @@ class Host(object):
     def ifup(self):
         self.cmd("ifconfig %s up; sleep 5" % self.get_10g_dev())
 
-    def add_qfq_qdisc(self, rate='5000', mtu=1500, nclass=8):
+    def add_qfq_qdisc(self, rate='5000', mtu=1500, nclass=8, startport=1000):
         iface = self.get_10g_dev()
         self.remove_qdiscs()
         self.rmmod()
         self.ifdown()
         c  = "tc qdisc add dev %s root handle 1: qfq;" % iface
-        bits = int(math.log(nclass, 2)) + 1
-        mask = (1 << bits) - 1
-        mask = hex(mask)
         self.cmd(c)
-        c = "for klass in {0..%d}; do " % (1 << bits)
-        c += "tc class add dev %s parent 1: classid 1:$(($klass+1)) qfq weight %s maxpkt 2048; " % (iface, rate)
-        c += "tc filter add dev %s parent 1: protocol all prio 1 u32 match ip sport $klass %s flowid 1:$(($klass+1)); " % (iface, mask)
+        c = "for klass in {%d..%d}; do " % (startport, startport+nclass-1)
+        c += "  tc class add dev %s parent 1: classid 1:$klass qfq weight %s maxpkt 2048; " % (iface, rate)
+        c += "  tc filter add dev %s parent 1: protocol all prio 1 u32 match ip dport $klass 0xffff flowid 1:$klass; " % (iface)
         c += "done;"
         """
         for klass in xrange((1 << bits) +1):
@@ -223,7 +221,10 @@ class Host(object):
                 self.cmd(c)
                 c = ''
         """
+        self.cmd(c)
+        c = ''
         # Default class
+        c += "tc class add dev %s parent 1: classid 1:1 qfq weight %s maxpkt 2048; " % (iface, rate)
         c += "tc filter add dev %s parent 1: protocol all prio 2 u32 match u32 0 0 flowid 1:1; " % iface
         self.cmd(c)
         self.ifup()
@@ -268,16 +269,23 @@ class Host(object):
     def start_n_iperfs(self, n, args, dir):
         batchsize = 100
         times = n/batchsize
-        orig_n = n
         while times:
             cmd = "iperf %s -P %s > %s/iperf-%d.txt" % (args, batchsize, dir, times)
             times -= 1
             n -= batchsize
             self.cmd_async(cmd)
-        if orig_n == 1:
-            n = 4
         cmd = "iperf %s -P %s > %s/iperf.txt " % (args, n, dir)
         self.cmd_async(cmd)
+        return
+
+    def start_n_udp(self, nclass, nprogs, dest, startport):
+        # Start nprogs udp traffic sources, nclass per each program,
+        # starting with @startport.  I assume each destination port is
+        # one class.
+        while nprogs:
+            nprogs -= 1
+            cmd = "%s %s %s %s > /dev/null" % (UDP, dest, startport, nclass)
+            self.cmd_async(cmd)
         return
 
     # Monitoring scripts
