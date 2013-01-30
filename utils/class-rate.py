@@ -48,6 +48,7 @@ def main():
         prev = curr
         for k in sorted(R.keys()):
             print "%s: %.3f" % (k, R[k] * 8.0 / 1e6)
+        sys.stdout.flush()
         tprev = time.time()
         time.sleep(args.num_sec)
     return
