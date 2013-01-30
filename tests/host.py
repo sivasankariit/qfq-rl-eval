@@ -234,8 +234,31 @@ class Host(object):
         c += "tc filter add dev %s parent 1: protocol all prio 2 u32 match u32 0 0 flowid 1:1; " % iface
         self.cmd(c)
         self.ifup()
+        self.disable_tso_gso()
+
+    def disable_tso_gso(self):
         # Disable tso/gso
+        iface = self.get_10g_dev()
         c = "ethtool -K %s gso off; ethtool -K %s tso off" % (iface, iface)
+        self.cmd(c)
+
+    def qfq_add_root(self, rate_default=100):
+        iface = self.get_10g_dev()
+        self.remove_qdiscs()
+        self.ifdown()
+        c = "tc qdisc add dev %s root handle 1: qfq;" % iface
+        self.cmd(c)
+        self.disable_tso_gso()
+        c += "tc class add dev %s parent 1: classid 1:1 qfq weight %s maxpkt 2048; " % (iface, rate_default)
+        c += "tc filter add dev %s parent 1: protocol all prio 2 u32 match u32 0 0 flowid 1:1; " % iface
+        self.cmd(c)
+        self.ifup()
+
+    def qfq_add_class(self, rate, dport):
+        dev = self.get_10g_dev()
+        c = "tc class add dev %s parent 1: classid 1:%d qfq weight %s maxpkt 2048; " % (dev, dport, rate)
+        self.cmd(c)
+        c = "tc filter add dev %s parent 1: protocol all prio 1 u32 match ip dport %d 0xffff flowid 1:%d; " % (dev, dport, dport)
         self.cmd(c)
 
     def killall(self, extra=""):
