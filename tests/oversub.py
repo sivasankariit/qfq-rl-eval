@@ -95,7 +95,9 @@ class Oversub(Expt):
         self.client.start_qfq_monitor(e(''))
         sleep(1)
         nprogs = 10
-        self.client.start_n_udp(args.nc, nprogs, "192.168.2.2", startport)
+        self.client.start_n_udp(args.nc, nprogs,
+                                socket.gethostbyname(self.opts("host")[1]),
+                                startport)
         return
 
     def stop(self):
