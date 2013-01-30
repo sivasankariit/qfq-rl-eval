@@ -68,6 +68,7 @@ class Oversub(Expt):
     def start(self):
         # num servers, num clients
         dir = self.opts("exptid")
+        server = self.opts("hosts")[0]
         client = self.opts("hosts")[1]
         startport = self.opts("startport")
 
@@ -96,7 +97,7 @@ class Oversub(Expt):
         sleep(1)
         nprogs = 10
         self.client.start_n_udp(args.nc, nprogs,
-                                socket.gethostbyname(self.opts("host")[1]),
+                                socket.gethostbyname(server),
                                 startport)
         return
 
