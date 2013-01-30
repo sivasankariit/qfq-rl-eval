@@ -131,16 +131,14 @@ class UDP(Expt):
         self.client.start_cpu_monitor(e(''))
         self.client.start_bw_monitor(e(''))
         sleep(1)
-        nprogs = self.opts("ns")
-        if self.opts("ns") == 1:
-            nprogs = 4
+        nprogs = 10
         self.client.start_n_udp(self.opts("ns"), nprogs, "192.168.2.2", startport)
         return
 
     def stop(self):
         self.client.qfq_stats(e(''))
         print 'waiting...'
-        sleep(2)
+        sleep(10)
         self.hlist.killall("iperf netperf netserver ethstats udp")
         self.client.copy_local(e(''), self.opts("exptid"))
         return
