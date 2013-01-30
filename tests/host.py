@@ -356,6 +356,15 @@ class Host(object):
         cmd = "(perf stat -e %s -a sleep %d) > %s 2>&1" % (events, time, path)
         return self.cmd_async(cmd)
 
+    def start_qfq_monitor(self, dir):
+        cmd = "python /root/vimal/rl-qfq/utils/class-rate.py -i %s > %s/class-stats.txt"
+        cmd = cmd % (self.get_10g_dev(), dir)
+        self.cmd_async(cmd)
+
+    def stop_qfq_monitor(self):
+        cmd = "pgrep -f class-rate.py | xargs kill -9"
+        self.cmd_async(cmd)
+
     def start_monitors(self, dir='/tmp', interval=1e8):
         return [self.start_cpu_monitor(dir),
                 self.start_bw_monitor(dir)]

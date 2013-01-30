@@ -92,6 +92,7 @@ class Oversub(Expt):
 
         self.client.start_cpu_monitor(e(''))
         self.client.start_bw_monitor(e(''))
+        self.client.start_qfq_monitor(e(''))
         sleep(1)
         nprogs = 10
         self.client.start_n_udp(args.nc, nprogs, "192.168.2.2", startport)
@@ -101,6 +102,7 @@ class Oversub(Expt):
         self.client.qfq_stats(e(''))
         print 'waiting...'
         sleep(10)
+        self.hlist.stop_qfq_monitor()
         self.hlist.killall("iperf netperf netserver ethstats udp")
         self.client.copy_local(e(''), self.opts("exptid"))
         return
