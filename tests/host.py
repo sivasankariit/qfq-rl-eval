@@ -200,7 +200,7 @@ class Host(object):
         iface = self.get_10g_dev()
         self.remove_qdiscs()
         self.rmmod()
-        c  = "tc qdisc add dev %s root handle 1: tbf limit 150000 rate %s burst 3000 limit 150000" % iface
+        c  = "tc qdisc add dev %s root handle 1: tbf limit 150000 rate %s burst 3000 limit 150000" % (iface, rate)
         self.cmd(c)
 
     def ifdown(self):

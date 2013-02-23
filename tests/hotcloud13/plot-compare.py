@@ -32,8 +32,8 @@ rspaces = re.compile(r'\s+')
 
 plot_defaults.rcParams['figure.figsize'] = 4, 3.5
 
-rls = ["none", "htb"]#, "tbf"]
-rates = [3000]# [1000, 3000, 5000, 7000, 9000]
+rls = ["none", "htb", "tbf"]
+rates = [1000, 3000, 5000, 7000, 9000]
 
 def DIR(rl, rate):
     return "rl-%s-nrls-1-rate-%s" % (rl, rate)
