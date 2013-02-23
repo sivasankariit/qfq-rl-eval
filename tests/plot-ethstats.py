@@ -14,7 +14,7 @@ import plot_defaults
 import sys
 import itertools
 from helper import *
-from parser import ESParser
+from parser import EthstatsParser
 
 IFACE="eth2"
 ZERO="0.00"

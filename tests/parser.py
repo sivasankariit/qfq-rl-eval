@@ -1,5 +1,5 @@
 
-class ESParser:
+class EthstatsParser:
     def __init__(self, filename):
         self.f = filename
         self.lines = open(filename).readlines()
