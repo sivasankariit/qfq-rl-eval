@@ -11,6 +11,8 @@
 
 #define MAX_SOCKS (10000)
 #define USEC_PER_SEC (1000000)
+#define min(a,b) ((a)<(b) ? (a):(b))
+
 int BURST_BYTES = (1 << 22);
 
 int sockfd[MAX_SOCKS];
@@ -69,7 +71,7 @@ int print_every(int usec, char *fmt, ...) {
 int main(int argc, char**argv)
 {
 	int n, startport, i, rate_mbps, usec, sent;
-	int slept, TARGET, ret, sendbuff;
+	int slept, TARGET, ret, sendbuff, send_size;
 	struct sockaddr_in cliaddr;
 
 	if (argc < 5)
@@ -81,15 +83,19 @@ int main(int argc, char**argv)
 	startport = atoi(argv[2]);
 	n = atoi(argv[3]);
 	rate_mbps = atoi(argv[4]);
-	usec = BURST_BYTES * 8 / rate_mbps;
-	TARGET = usec;
 
 	if (argc > 5) {
 		BURST_BYTES = atoi(argv[5]);
 	}
 
+	usec = BURST_BYTES * 8 / rate_mbps;
+	TARGET = usec;
+
+	send_size = min(BURST_BYTES, sizeof(buff));
 	sendbuff = 1 << 20;
-	printf("Sleeping for %dus, sendbuff %d\n", usec, sendbuff);
+
+	printf("Sleeping for %dus, sendbuff %d, send_size %d, burst %d\n",
+	       usec, sendbuff, send_size, BURST_BYTES);
 
 	for (i = 0; i < n; i++) {
 		sockfd[i] = socket(AF_INET, SOCK_DGRAM, 0);
@@ -110,7 +116,7 @@ int main(int argc, char**argv)
 		i = 0;
 		for (i = 0; i < n; i++) {
 			ret = sendto(sockfd[i], buff,
-				     sizeof(buff), 0,
+				     send_size, 0,
 				     (struct sockaddr *)&servaddr[i],
 				     sizeof(servaddr[i]));
 
