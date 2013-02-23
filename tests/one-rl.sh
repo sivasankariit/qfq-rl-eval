@@ -15,7 +15,7 @@ trap finish SIGINT
 python ../utils/set-affinity.py $dev
 
 mkdir -p $dir
-for rl in qfq; do
+for rl in none; do
 for rate in 3000; do
 for nrls in 1; do
     exptid=rl-$rl-nrls-$nrls-rate-$rate

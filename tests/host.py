@@ -307,13 +307,13 @@ class Host(object):
         self.cmd_async(cmd)
         return
 
-    def start_n_udp(self, nclass, nprogs, dest, startport):
+    def start_n_udp(self, nclass, nprogs, dest, startport, rate=10000):
         # Start nprogs udp traffic sources, nclass per each program,
         # starting with @startport.  I assume each destination port is
         # one class.
         while nprogs:
             nprogs -= 1
-            cmd = "%s %s %s %s > /dev/null" % (UDP, dest, startport, nclass)
+            cmd = "%s %s %s %s %s > /dev/null" % (UDP, dest, startport, nclass, rate)
             self.cmd_async(cmd)
         return
 
@@ -360,6 +360,13 @@ class Host(object):
         cmd = "python /root/vimal/rl-qfq/utils/class-rate.py -i %s > %s/class-stats.txt"
         cmd = cmd % (self.get_10g_dev(), dir)
         self.cmd_async(cmd)
+
+    def start_mpstat(self, dir):
+        cmd = "mpstat 1 > %s/mpstat.txt" % dir
+        self.cmd_async(cmd)
+
+    def stop_mpstat(self):
+        self.cmd("killall -9 mpstat")
 
     def stop_qfq_monitor(self):
         cmd = "pgrep -f class-rate.py | xargs kill -9"

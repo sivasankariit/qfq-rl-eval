@@ -90,12 +90,20 @@ parser.add_argument('--rate',
                     help="rate per rate limiter",
                     default=1000)
 
+parser.add_argument('--user',
+                    action="store_true",
+                    default=False,
+                    help="App-level rate limiting")
+
 parser.add_argument('--startport',
                     dest="startport",
                     type=int,
                     default=1000)
 
 args = parser.parse_args()
+if args.rl == "none":
+    print "Using userspace rate limiting"
+    args.user = True
 
 def e(s):
     return "/tmp/%s/%s" % (args.exptid, s)
@@ -119,7 +127,7 @@ class UDP(Expt):
         self.hlist.rmmod()
         self.hlist.killall()
         self.hlist.remove_qdiscs()
-        self.hlist.insmod_qfq()
+        #self.hlist.insmod_qfq()
         if self.opts("rl") == "htb":
             self.client.add_htb_qdisc("5Gbit", args.htb_mtu)
 	elif self.opts("rl") == "qfq":
@@ -130,15 +138,23 @@ class UDP(Expt):
 
         self.client.start_cpu_monitor(e(''))
         self.client.start_bw_monitor(e(''))
+        if self.opts("rl") == "qfq":
+            self.client.start_qfq_monitor(e(''))
+        self.client.start_mpstat(e(''))
         sleep(1)
-        nprogs = 10
-        self.client.start_n_udp(self.opts("ns"), nprogs, "192.168.2.2", startport)
+        nprogs = 8
+        rate = 10000
+        # If we want userspace rate limiting
+        if self.opts("user") == True:
+            rate = self.opts("rate") / nprogs
+        self.client.start_n_udp(self.opts("ns"), nprogs, "192.168.2.2", startport, rate)
         return
 
     def stop(self):
         self.client.qfq_stats(e(''))
         print 'waiting...'
         sleep(10)
+        self.hlist.stop_qfq_monitor()
         self.hlist.killall("iperf netperf netserver ethstats udp")
         self.client.copy_local(e(''), self.opts("exptid"))
         return
