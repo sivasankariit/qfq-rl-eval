@@ -196,6 +196,13 @@ class Host(object):
         c += "htb rate %s mtu %s burst 15k;" % (rate, mtu)
         self.cmd(c)
 
+    def add_tbf_qdisc(self, rate='5Gbit'):
+        iface = self.get_10g_dev()
+        self.remove_qdiscs()
+        self.rmmod()
+        c  = "tc qdisc add dev %s root handle 1: tbf limit 150000 rate %s burst 3000 limit 150000" % iface
+        self.cmd(c)
+
     def ifdown(self):
         self.cmd("ifconfig %s down" % self.get_10g_dev())
     def ifup(self):

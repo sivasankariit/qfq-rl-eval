@@ -130,6 +130,8 @@ class UDP(Expt):
         #self.hlist.insmod_qfq()
         if self.opts("rl") == "htb":
             self.client.add_htb_qdisc(str(args.rate) + "Mbit", args.htb_mtu)
+        elif self.opts("rl") == "tbf":
+            self.client.add_tbf_qdisc(str(args.rate) + "Mbit")
 	elif self.opts("rl") == "qfq":
 	    self.client.add_qfq_qdisc(str(args.rate), args.htb_mtu, nclass=args.nrls, startport=startport)
 
@@ -143,7 +145,12 @@ class UDP(Expt):
         self.client.start_mpstat(e(''))
         sleep(1)
         nprogs = 8
-        rate = 10000
+        # Vimal: Initially I kept this rate = 10000, so the kernel
+        # module will do all rate limiting.  But it seems like the
+        # function __ip_route_output_key seems to consume a lot of CPU
+        # usage at high packet rates, so I thought I better keep the
+        # packet rate the same.
+        rate = self.opts("rate") / nprogs
         # If we want userspace rate limiting
         if self.opts("user") == True:
             rate = self.opts("rate") / nprogs
