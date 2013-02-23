@@ -39,15 +39,24 @@ unsigned long long timeval_diff_usec(struct timeval *start, struct timeval *end)
 	return (end->tv_sec - start->tv_sec) * 1LLU * USEC_PER_SEC + end->tv_usec - start->tv_usec;
 }
 
-/* Returns the time it actually slept for */
-unsigned long long spin_sleep(int usec) {
+/* Returns the time it actually slept for.
+ * Sets prev to the last measured timeval after the sleeptime.
+ * If prev is not 0, then the function uses prev as the start time to sleep from
+ * instead of taking the current time.
+ */
+unsigned long long spin_sleep(int usec, struct timeval *prev) {
 	struct timeval start, curr;
-	gettimeofday(&start, NULL);
+	if (prev->tv_sec == 0 && prev->tv_usec == 0) {
+		gettimeofday(&start, NULL);
+	} else {
+		start = *prev;
+	}
 
 	do {
 		gettimeofday(&curr, NULL);
 	} while (timeval_diff_usec(&start, &curr) < usec);
 
+	*prev = curr;
 	return timeval_diff_usec(&start, &curr);
 }
 
@@ -111,6 +120,9 @@ int main(int argc, char**argv)
 		servaddr[i].sin_port = htons(startport + i);
 	}
 
+	struct timeval prev;
+	prev.tv_sec = 0;
+	prev.tv_usec = 0;
 	printf("Starting %d udp ports of traffic to %s\n", n, argv[1]);
 	while (1) {
 		i = 0;
@@ -126,8 +138,8 @@ int main(int argc, char**argv)
 
 			if (sent >= BURST_BYTES) {
 				sent -= BURST_BYTES;
-				slept = spin_sleep(usec);
-				// print_every(USEC_PER_SEC, "Slept %dus, next %dus\n", slept, usec);
+				slept = spin_sleep(usec, &prev);
+				//print_every(USEC_PER_SEC, "Slept %dus, next %dus\n", slept, usec);
 			}
 		}
 	}
