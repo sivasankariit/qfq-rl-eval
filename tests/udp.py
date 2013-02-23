@@ -129,7 +129,7 @@ class UDP(Expt):
         self.hlist.remove_qdiscs()
         #self.hlist.insmod_qfq()
         if self.opts("rl") == "htb":
-            self.client.add_htb_qdisc("5Gbit", args.htb_mtu)
+            self.client.add_htb_qdisc(str(args.rate) + "Mbit", args.htb_mtu)
 	elif self.opts("rl") == "qfq":
 	    self.client.add_qfq_qdisc(str(args.rate), args.htb_mtu, nclass=args.nrls, startport=startport)
 
