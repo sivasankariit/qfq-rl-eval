@@ -68,3 +68,8 @@ class MPStatParser:
         msys = mean(self.usage["sys"])
         msirq = mean(self.usage["sirq"])
         return "user: %.2f, sys: %.2f, sirq: %.2f" % (muser, msys, msirq)
+
+    def kernel(self):
+        msys = mean(self.usage["sys"])
+        msirq = mean(self.usage["sirq"])
+        return msys + msirq
