@@ -17,7 +17,7 @@ int BURST_BYTES = (1 << 22);
 
 int sockfd[MAX_SOCKS];
 struct sockaddr_in servaddr[MAX_SOCKS];
-char buff[9000];
+char *buff;
 
 int set_non_blocking(int fd)
 {
@@ -97,10 +97,14 @@ int main(int argc, char**argv)
 		BURST_BYTES = atoi(argv[5]);
 	}
 
+	send_size = min(BURST_BYTES, 65536 - 40);
+	buff = malloc(send_size);
+	if (buff == NULL)
+		return -1;
+
 	usec = BURST_BYTES * 8 / rate_mbps;
 	TARGET = usec;
 
-	send_size = min(BURST_BYTES, sizeof(buff));
 	sendbuff = 1 << 20;
 
 	printf("Sleeping for %dus, sendbuff %d, send_size %d, burst %d\n",
