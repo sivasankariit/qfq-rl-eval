@@ -32,13 +32,22 @@ rspaces = re.compile(r'\s+')
 
 plot_defaults.rcParams['figure.figsize'] = 4, 3.5
 
-rls = ["none", "htb", "tbf"]
+rls = ["none", "htb"]#, "tbf"]
+rl_name = dict(none="app", htb="htb")
+colour_rl = dict(none="yellow", htb="green", tbf="blue")
 rates = [1000, 3000, 5000, 7000, 9000]
+rl_bar = dict()
 
 def DIR(rl, rate):
     return "rl-%s-nrls-1-rate-%s" % (rl, rate)
 
-for rl, rate in itertools.product(rls, rates):
+def E(lst):
+    return list(enumerate(lst))
+
+def get_rl_colour(rl):
+    return colour_rl[rl]
+
+for (i,rl), (j,rate) in itertools.product(E(rls), E(rates)):
     dir = DIR(rl, rate)
     ethstats_fname = os.path.join(args.dir, dir, "net.txt")
     mpstat_fname = os.path.join(args.dir, dir, "mpstat.txt")
@@ -46,6 +55,26 @@ for rl, rate in itertools.product(rls, rates):
     estats = EthstatsParser(ethstats_fname)
     mpstats = MPStatParser(mpstat_fname)
 
-    rates = estats.parse()
+    #rates = estats.parse()
     summ = estats.summary()
     print rl, rate, summ, mpstats.summary()
+
+    x = j * (len(rls) + 1) + i
+    y = mpstats.kernel()
+    bar = plt.bar(x, y, width=1, color=get_rl_colour(rl))
+    rl_bar[rl] = bar[0]
+
+plt.legend([rl_bar[rl] for rl in rls],
+           [rl_name[rl] for rl in rls],
+           loc="upper left")
+width = len(rls) + 1
+xtickloc = width * numpy.arange(len(rates)) + (width / 2)
+plt.xticks(xtickloc, rates)
+plt.ylim((0, 100))
+plt.ylabel("CPU usage %")
+plt.xlabel("Rates in Mb/s")
+
+if args.out:
+    plt.savefig(args.out)
+    print "saved to", args.out
+
