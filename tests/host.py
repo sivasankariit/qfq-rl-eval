@@ -196,6 +196,38 @@ class Host(object):
         c += "htb rate %s mtu %s burst 15k;" % (rate, mtu)
         self.cmd(c)
 
+    def add_htb_hash(self, num_hash_bits=4):
+        num_hash = 1 << num_hash_bits
+        self.num_hash = num_hash
+        self.hash_mask = hex((1 << num_hash_bits) - 1)
+        dev = self.get_10g_dev()
+        c  = "tc filter add dev %s parent 1: prio 1 protocol all u32; " % dev
+        c += "tc filter add dev %s parent 1: prio 1 handle 2: protocol all u32 divisor %s; " % (dev, num_hash)
+        c += "tc filter add dev %s protocol all parent 1: prio 1 u32 ht 800::  match ip protocol 0 0 hashkey mask %s at 20  link 2:; " % (dev, self.hash_mask)
+        self.cmd(c)
+
+    def add_one_htb_class(self, rate='5Gbit', ceil='5Gbit', port=1000, klass=1):
+        dev = self.get_10g_dev()
+        c  = "tc class add dev %s classid 1:%d parent 1: htb rate %s ceil %s; " % (dev, klass, rate, ceil)
+        c += "tc filter add dev %s protocol all parent 1: prio 1 u32 ht 2:%d: match ip dport %d %d flowid 1:%d" % (dev, hash, port, self.hash_mask, klass)
+        self.cmd(c)
+
+    def add_n_htb_class(self, rate='5Gbit', ceil='5Gbit', start_port=1000, num_hash=8):
+        dev = self.get_10g_dev()
+        c  = "for klass in `seq %s %s`; do " % (start_port, start_port + self.num_hash)
+        c += "  hexclass=`perl -e \"printf('%%x', $klass %% %s)\"`; " % (num_hash)
+        c += "  tc filter add dev %s protocol all parent 1: prio 1 u32 ht 2:$hexclass: match ip dport $klass %s flowid 1:%s; " % (dev, self.hash_mask, "$klass")
+        c += "  tc class add dev %s classid 1:%s parent 1: htb rate %s ceil %s; " % (dev, "$klass", rate, ceil)
+        c += "done;"
+        self.cmd(c)
+
+    def htb_class_filter_output(self, dir):
+        dev = self.get_10g_dev()
+        c  = "tc -s class show dev %s > %s/htb-class.txt" % (dev, dir)
+        self.cmd(c)
+        c  = "tc -s filter show dev %s > %s/htb-filter.txt" % (dev, dir)
+        self.cmd(c)
+
     def set_mtu(self, mtu=1500):
         iface = self.get_10g_dev()
         c = "ifconfig %s mtu %s" % (iface, mtu)

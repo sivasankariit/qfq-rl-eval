@@ -43,6 +43,11 @@ parser.add_argument('--htb-mtu',
                     help="HTB MTU parameter.",
                     default=1500)
 
+parser.add_argument('--num-class',
+                    help="Number of classes of traffic.",
+                    type=int,
+                    default=None)
+
 parser.add_argument('--mtu',
                     help="MTU parameter.",
                     default=1500)
@@ -132,8 +137,17 @@ class UDP(Expt):
         self.hlist.killall("udp")
         self.hlist.remove_qdiscs()
         #self.hlist.insmod_qfq()
+        num_senders = self.opts("ns")
         if self.opts("rl") == "htb":
             self.client.add_htb_qdisc(str(args.rate) + "Mbit", args.htb_mtu)
+            if self.opts("num_class") is not None:
+                num_hash_bits = int(math.log(self.opts("num_class"), 2))
+                self.client.add_htb_hash(num_hash_bits=num_hash_bits)
+                self.client.add_n_htb_class(num_hash=self.opts("num_class"))
+                num_senders = self.opts("num_class")
+
+                # Just verify that we have created all classes correctly.
+                self.client.htb_class_filter_output(e(''))
         elif self.opts("rl") == "tbf":
             self.client.add_tbf_qdisc(str(args.rate) + "Mbit")
 	elif self.opts("rl") == "qfq":
@@ -159,7 +173,8 @@ class UDP(Expt):
         # If we want userspace rate limiting
         if self.opts("user") == True:
             rate = self.opts("rate") / nprogs
-        self.client.start_n_udp(self.opts("ns"), nprogs, "192.168.2.2", startport, rate)
+
+        self.client.start_n_udp(num_senders, nprogs, "192.168.2.2", startport, rate)
         return
 
     def stop(self):
