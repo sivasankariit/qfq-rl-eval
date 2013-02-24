@@ -43,6 +43,10 @@ parser.add_argument('--htb-mtu',
                     help="HTB MTU parameter.",
                     default=1500)
 
+parser.add_argument('--mtu',
+                    help="MTU parameter.",
+                    default=1500)
+
 parser.add_argument('--pin',
                     dest="pin",
                     help="Pin netperf to CPUs in round robin fashion.",
@@ -143,6 +147,7 @@ class UDP(Expt):
         if self.opts("rl") == "qfq":
             self.client.start_qfq_monitor(e(''))
         self.client.start_mpstat(e(''))
+        self.client.set_mtu(self.opts("mtu"))
         sleep(1)
         nprogs = 16
         # Vimal: Initially I kept this rate = 10000, so the kernel

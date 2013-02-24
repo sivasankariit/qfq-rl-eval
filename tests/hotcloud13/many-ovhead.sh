@@ -5,6 +5,7 @@ time=40
 ns=0
 start=`date`
 dev=eth2
+mtu=9000
 
 function finish {
     killall -9 ssh
@@ -17,7 +18,7 @@ python ../utils/set-affinity.py $dev
 mkdir -p $dir
 for rate in 1000 3000 5000 7000 9000; do
 for nrls in 1; do
-for rl in none htb tbf; do
+for rl in none htb; do
     exptid=rl-$rl-nrls-$nrls-rate-$rate
     rate_per_rl=$(($rate/$nrls))
     python udp.py --nrr 0 \
@@ -26,6 +27,7 @@ for rl in none htb tbf; do
         --rl $rl \
         --rate $rate_per_rl \
         --nrls $nrls \
+	--mtu $mtu \
 	--ns $nrls # Same num of senders as rate limiters
 
     mv $exptid.tar.gz $dir/

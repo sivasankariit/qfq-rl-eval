@@ -196,6 +196,11 @@ class Host(object):
         c += "htb rate %s mtu %s burst 15k;" % (rate, mtu)
         self.cmd(c)
 
+    def set_mtu(self, mtu=1500):
+        iface = self.get_10g_dev()
+        c = "ifconfig %s mtu %s" % (iface, mtu)
+        self.cmd(c)
+
     def add_tbf_qdisc(self, rate='5Gbit'):
         iface = self.get_10g_dev()
         self.remove_qdiscs()
@@ -314,13 +319,13 @@ class Host(object):
         self.cmd_async(cmd)
         return
 
-    def start_n_udp(self, nclass, nprogs, dest, startport, rate=10000):
+    def start_n_udp(self, nclass, nprogs, dest, startport, rate=10000, burst=(1 << 22)):
         # Start nprogs udp traffic sources, nclass per each program,
         # starting with @startport.  I assume each destination port is
         # one class.
         while nprogs:
             nprogs -= 1
-            cmd = "%s %s %s %s %s > /dev/null" % (UDP, dest, startport, nclass, rate)
+            cmd = "%s %s %s %s %s %s > /dev/null" % (UDP, dest, startport, nclass, rate, burst)
             self.cmd_async(cmd)
         return
 
