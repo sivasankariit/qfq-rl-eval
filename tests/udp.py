@@ -127,6 +127,9 @@ class UDP(Expt):
         client = self.opts("hosts")[1]
         startport = self.opts("startport")
 
+        self.hlist.rmrf(e(""))
+        self.hlist.mkdir(e(""))
+
         #self.server = Host(client)
         self.client = Host(client)
         self.hlist = HostList()
@@ -152,9 +155,6 @@ class UDP(Expt):
             self.client.add_tbf_qdisc(str(args.rate) + "Mbit")
 	elif self.opts("rl") == "qfq":
 	    self.client.add_qfq_qdisc(str(args.rate), args.htb_mtu, nclass=args.nrls, startport=startport)
-
-        self.hlist.rmrf(e(""))
-        self.hlist.mkdir(e(""))
 
         self.client.start_cpu_monitor(e(''))
         self.client.start_bw_monitor(e(''))
