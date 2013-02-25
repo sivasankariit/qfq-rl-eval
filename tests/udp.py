@@ -127,14 +127,14 @@ class UDP(Expt):
         client = self.opts("hosts")[1]
         startport = self.opts("startport")
 
-        self.hlist.rmrf(e(""))
-        self.hlist.mkdir(e(""))
-
         #self.server = Host(client)
         self.client = Host(client)
         self.hlist = HostList()
         #self.hlist.append(self.server)
         self.hlist.append(self.client)
+
+        self.hlist.rmrf(e(""))
+        self.hlist.mkdir(e(""))
 
         self.hlist.rmmod()
         self.hlist.killall("udp")
@@ -146,7 +146,7 @@ class UDP(Expt):
             if self.opts("num_class") is not None:
                 num_hash_bits = int(math.log(self.opts("num_class"), 2))
                 self.client.add_htb_hash(num_hash_bits=num_hash_bits)
-                self.client.add_n_htb_class(num_hash=self.opts("num_class"))
+                self.client.add_n_htb_class(num_class=self.opts("num_class"))
                 num_senders = self.opts("num_class")
 
                 # Just verify that we have created all classes correctly.
@@ -174,7 +174,7 @@ class UDP(Expt):
         if self.opts("user") == True:
             rate = self.opts("rate") / nprogs
 
-        self.client.start_n_udp(num_senders, nprogs, "192.168.2.2", startport, rate)
+        self.client.start_n_udp(num_senders, nprogs, "192.168.2.2", startport, rate, dir=e(''))
         return
 
     def stop(self):
