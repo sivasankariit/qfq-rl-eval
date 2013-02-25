@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <stdarg.h>
+#include <sys/resource.h>
 
 #define MAX_SOCKS (10000)
 #define USEC_PER_SEC (1000000)
@@ -77,6 +78,27 @@ int print_every(int usec, char *fmt, ...) {
 	return ret;
 }
 
+void set_num_file_limit(int n) {
+	rlim_t num_files;
+	struct rlimit rl;
+	int ret;
+
+	num_files = n;
+	ret = getrlimit(RLIMIT_NOFILE, &rl);
+	if (ret == 0) {
+		rl.rlim_cur = n + 1000;
+		rl.rlim_max = n + 1000;
+		ret = setrlimit(RLIMIT_NOFILE, &rl);
+		if (ret != 0) {
+			perror("setrlimit");
+			exit(-1);
+		}
+	} else {
+		perror("getrlimit");
+		exit(-1);
+	}
+}
+
 int main(int argc, char**argv)
 {
 	int n, startport, i, rate_mbps, usec, sent;
@@ -97,6 +119,9 @@ int main(int argc, char**argv)
 		BURST_BYTES = atoi(argv[5]);
 	}
 
+	/* First set resource limits */
+	set_num_file_limit(n);
+
 	send_size = min(BURST_BYTES, 65536 - 40);
 	buff = malloc(send_size);
 	if (buff == NULL)
@@ -112,6 +137,12 @@ int main(int argc, char**argv)
 
 	for (i = 0; i < n; i++) {
 		sockfd[i] = socket(AF_INET, SOCK_DGRAM, 0);
+
+		if (sockfd[i] < 0) {
+			perror("socket");
+			return -1;
+		}
+
 		set_non_blocking(sockfd[i]);
 		if (setsockopt(sockfd[i], SOL_SOCKET, SO_SNDBUF, &sendbuff, sizeof(sendbuff)) < 0) {
 			perror("setsockopt sendbuff");
