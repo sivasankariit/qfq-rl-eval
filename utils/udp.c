@@ -112,6 +112,8 @@ int main(int argc, char**argv)
 	int n, startport, i, rate_mbps, usec, sent;
 	int slept, TARGET, ret, sendbuff, send_size;
 	struct sockaddr_in cliaddr;
+	FILE *fp; int fd;
+	off_t offset = 0;
 
 	if (argc < 5)
 	{
@@ -132,21 +134,24 @@ int main(int argc, char**argv)
 
 	send_size = min(BURST_BYTES, 65536 - HEADER_SIZE);
 
-	buff = mmap(NULL, send_size, PROT_READ | PROT_WRITE,
-		    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	fd = open(argv[0], O_RDONLY);
+/*
+	buff = mmap(NULL, send_size, PROT_READ,
+		    MAP_PRIVATE, fd, 0);
 
 	if (buff == MAP_FAILED) {
 		perror("mmap");
 		return -1;
 	}
+*/
 
 	usec = bytes_on_wire(BURST_BYTES) * 8 / rate_mbps;
 	TARGET = usec;
 
 	sendbuff = 1 << 20;
 
-	printf("Sleeping for %dus, sendbuff %d, send_size %d, burst %d\n",
-	       usec, sendbuff, send_size, BURST_BYTES);
+	printf("Sleeping for %dus, sendbuff %d, send_size %d, burst %d, fd %d\n",
+	       usec, sendbuff, send_size, BURST_BYTES, fd);
 
 	for (i = 0; i < n; i++) {
 		sockfd[i] = socket(AF_INET, SOCK_DGRAM, 0);
@@ -183,10 +188,11 @@ int main(int argc, char**argv)
 	while (1) {
 		i = 0;
 		for (i = 0; i < n; i++) {
-			ret = sendfile(sockfd[i], buff, 0, send_size);
+			offset = 0;
+			ret = sendfile(sockfd[i], fd, &offset, send_size);
 
-			if (ret > 0) {
-				sent += bytes_on_wire(ret);
+			if (ret != -1) {
+				sent += bytes_on_wire(send_size);
 			}
 
 			if (sent >= BURST_BYTES) {
