@@ -9,7 +9,7 @@ import pexpect
 import math
 
 RL_MODULE_NAME='newrl'
-RL_MODULE = '/root/vimal/newrl.ko'
+RL_MODULE = '/root/vimal/prl/newrl.ko'
 DEFAULT_DEV = 'eth2'
 NETPERF_DIR = '/root/vimal'
 NETPERF_DIR = '/usr/local/bin'
@@ -167,7 +167,8 @@ class Host(object):
         self.cmd("rmmod %s" % mod)
 
     def insmod(self, mod=RL_MODULE, rmmod=True, rate=5000, nrls=1):
-        params="dev=%s ntestrls=%s rate=%s" % (DEFAULT_DEV, nrls, rate)
+        dev = self.get_10g_dev()
+        params="dev=%s ntestrls=%s rate=%s" % (dev, nrls, rate)
         cmd = "insmod %s %s" % (mod, params)
         if rmmod:
             cmd = "rmmod %s; " % mod + cmd
@@ -363,7 +364,7 @@ class Host(object):
             outfile = '%s/udp-%d.txt' % (dir, nprogs)
             if dir is None:
                 outfile = '/dev/null'
-            cmd = "%s %s %s %s %s %s > %s 2>&1" % (UDP, dest, startport, nclass, rate, burst, outfile)
+            cmd = "taskset -c %s %s %s %s %s %s %s > %s 2>&1" % (2, UDP, dest, startport, nclass, rate, burst, outfile)
             self.cmd_async(cmd)
         return
 
@@ -413,6 +414,9 @@ class Host(object):
 
     def start_mpstat(self, dir):
         cmd = "mpstat 1 > %s/mpstat.txt" % dir
+        self.cmd_async(cmd)
+
+        cmd = "mpstat 1 -A > %s/mpstat-all.txt" % dir
         self.cmd_async(cmd)
 
     def stop_mpstat(self):
