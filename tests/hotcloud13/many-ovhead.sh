@@ -19,6 +19,7 @@ mkdir -p $dir
 for rate in 1000 3000 5000 7000 9000; do
 for nrls in 1; do
 for rl in none htb eyeq; do
+for run in 1 2 3; do
     exptid=rl-$rl-nrls-$nrls-rate-$rate
     rate_per_rl=$(($rate/$nrls))
     python udp.py --nrr 0 \
@@ -36,6 +37,7 @@ for rl in none htb eyeq; do
     tar xf $exptid.tar.gz
     #python ../plot.py --rr $exptid/* -o $exptid.png --ymin 0.9
     popd;
+done;
 done;
 done;
 done;
