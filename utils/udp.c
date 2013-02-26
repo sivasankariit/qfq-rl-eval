@@ -9,12 +9,15 @@
 #include <sys/time.h>
 #include <stdarg.h>
 #include <sys/resource.h>
+#include <sys/mman.h>
 
 #define MAX_SOCKS (10000)
 #define USEC_PER_SEC (1000000)
 #define min(a,b) ((a)<(b) ? (a):(b))
 
 int BURST_BYTES = (1 << 22);
+int MTU = 9000;
+int HEADER_SIZE = 14 + 20 + 8;
 
 int sockfd[MAX_SOCKS];
 struct sockaddr_in servaddr[MAX_SOCKS];
@@ -99,6 +102,11 @@ void set_num_file_limit(int n) {
 	}
 }
 
+inline int bytes_on_wire(int write_size) {
+	int num_packets = (write_size + MTU - 1) / MTU;
+	return write_size + num_packets * HEADER_SIZE;
+}
+
 int main(int argc, char**argv)
 {
 	int n, startport, i, rate_mbps, usec, sent;
@@ -122,12 +130,17 @@ int main(int argc, char**argv)
 	/* First set resource limits */
 	set_num_file_limit(n);
 
-	send_size = min(BURST_BYTES, 65536 - 40);
-	buff = malloc(send_size);
-	if (buff == NULL)
-		return -1;
+	send_size = min(BURST_BYTES, 65536 - HEADER_SIZE);
 
-	usec = BURST_BYTES * 8 / rate_mbps;
+	buff = mmap(NULL, send_size, PROT_READ | PROT_WRITE,
+		    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+	if (buff == MAP_FAILED) {
+		perror("mmap");
+		return -1;
+	}
+
+	usec = bytes_on_wire(BURST_BYTES) * 8 / rate_mbps;
 	TARGET = usec;
 
 	sendbuff = 1 << 20;
@@ -153,22 +166,27 @@ int main(int argc, char**argv)
 		servaddr[i].sin_family = AF_INET;
 		servaddr[i].sin_addr.s_addr = inet_addr(argv[1]);
 		servaddr[i].sin_port = htons(startport + i);
+
+		if (connect(sockfd[i], (const struct sockaddr *)&servaddr[i],
+			    sizeof servaddr[i]))
+		{
+			perror("connect");
+			return -1;
+		}
 	}
 
 	struct timeval prev;
 	prev.tv_sec = 0;
 	prev.tv_usec = 0;
 	printf("Starting %d udp ports of traffic to %s\n", n, argv[1]);
+
 	while (1) {
 		i = 0;
 		for (i = 0; i < n; i++) {
-			ret = sendto(sockfd[i], buff,
-				     send_size, 0,
-				     (struct sockaddr *)&servaddr[i],
-				     sizeof(servaddr[i]));
+			ret = sendfile(sockfd[i], buff, 0, send_size);
 
 			if (ret > 0) {
-				sent += ret;
+				sent += bytes_on_wire(ret);
 			}
 
 			if (sent >= BURST_BYTES) {
