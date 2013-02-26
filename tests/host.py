@@ -353,7 +353,7 @@ class Host(object):
         self.cmd_async(cmd)
         return
 
-    def start_n_udp(self, nclass, nprogs, dest, startport, rate=10000, burst=(1 << 22), dir=None):
+    def start_n_udp(self, nclass, nprogs, dest, startport, rate=10000, burst=8850, dir=None):
         # Start nprogs udp traffic sources, nclass per each program,
         # starting with @startport.  I assume each destination port is
         # one class.
