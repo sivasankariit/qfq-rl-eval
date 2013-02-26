@@ -66,7 +66,7 @@ parser.add_argument('--exptid',
 parser.add_argument('--rl',
                     dest="rl",
                     help="Which rate limiter to use",
-                    choices=["htb", "qfq", 'none', "tbf"],
+                    choices=["htb", "qfq", 'none', "tbf", "eyeq"],
                     default="")
 
 parser.add_argument('--time', '-t',
@@ -155,6 +155,8 @@ class UDP(Expt):
             self.client.add_tbf_qdisc(str(args.rate) + "Mbit")
 	elif self.opts("rl") == "qfq":
 	    self.client.add_qfq_qdisc(str(args.rate), args.htb_mtu, nclass=args.nrls, startport=startport)
+        elif self.opts("rl") == "eyeq":
+            self.client.insmod(rate=args.rate)
 
         self.client.start_cpu_monitor(e(''))
         self.client.start_bw_monitor(e(''))
@@ -163,7 +165,7 @@ class UDP(Expt):
         self.client.start_mpstat(e(''))
         self.client.set_mtu(self.opts("mtu"))
         sleep(1)
-        nprogs = 16
+        nprogs = 1
         # Vimal: Initially I kept this rate = 10000, so the kernel
         # module will do all rate limiting.  But it seems like the
         # function __ip_route_output_key seems to consume a lot of CPU

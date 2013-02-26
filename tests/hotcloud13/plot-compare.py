@@ -37,9 +37,9 @@ rspaces = re.compile(r'\s+')
 
 plot_defaults.rcParams['figure.figsize'] = 4, 3.5
 
-rls = ["none", "htb"]#, "tbf"]
-rl_name = dict(none="app", htb="htb")
-colour_rl = dict(none="yellow", htb="green", tbf="blue")
+rls = ["none", "htb", "eyeq"]#, "tbf"]
+rl_name = dict(none="app", htb="htb",eyeq="eyeq")
+colour_rl = dict(none="yellow", htb="green", tbf="blue", eyeq="grey")
 rates = [1000, 3000, 5000, 7000, 9000]
 rl_bar = dict()
 
