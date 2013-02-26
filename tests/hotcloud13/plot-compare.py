@@ -24,6 +24,11 @@ parser.add_argument('--dir',
                     required=True,
                     help="expt output dir")
 
+parser.add_argument('--maxy',
+                    default=40,
+                    type=int,
+                    help="max y-axis")
+
 parser.add_argument('--out', '-o',
                     help="save plot to file")
 
@@ -70,7 +75,7 @@ plt.legend([rl_bar[rl] for rl in rls],
 width = len(rls) + 1
 xtickloc = width * numpy.arange(len(rates)) + (width / 2)
 plt.xticks(xtickloc, rates)
-plt.ylim((0, 100))
+plt.ylim((0, args.maxy))
 plt.ylabel("CPU usage %")
 plt.xlabel("Rates in Mb/s")
 
