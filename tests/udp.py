@@ -176,7 +176,9 @@ class UDP(Expt):
         if self.opts("user") == True:
             rate = self.opts("rate") / nprogs
 
-        self.client.start_n_udp(num_senders, nprogs, "192.168.2.2", startport, rate, dir=e(''))
+        self.client.start_n_udp(num_senders, nprogs,
+                                socket.gethostbyname(client), startport,
+                                rate, dir=e(''))
         return
 
     def stop(self):
