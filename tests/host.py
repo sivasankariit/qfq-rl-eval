@@ -446,4 +446,7 @@ class Host(object):
         local_cmd(c)
 
     def hostname(self):
-        return socket.gethostbyaddr(self.addr)[0]
+        try:
+            return socket.gethostbyaddr(self.addr)[0]
+        except:
+            return self.addr
