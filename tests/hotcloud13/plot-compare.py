@@ -29,6 +29,11 @@ parser.add_argument('--maxy',
                     type=int,
                     help="max y-axis")
 
+parser.add_argument('--num-runs', '-r',
+                    default=3,
+                    type=int,
+                    help="number of times the expt was run")
+
 parser.add_argument('--out', '-o',
                     help="save plot to file")
 
@@ -40,11 +45,16 @@ plot_defaults.rcParams['figure.figsize'] = 4, 3.5
 rls = ["none", "htb", "eyeq"]#, "tbf"]
 rl_name = dict(none="app", htb="htb",eyeq="eyeq")
 colour_rl = dict(none="yellow", htb="green", tbf="blue", eyeq="grey")
+
 rates = [1000, 3000, 5000, 7000, 9000]
+
+runs = 1 + numpy.arange(args.num_runs)
+# Stores references to the matplotlib artist that draws the bars so we
+# can label it.
 rl_bar = dict()
 
-def DIR(rl, rate):
-    return "rl-%s-nrls-1-rate-%s" % (rl, rate)
+def DIR(rl, rate, run):
+    return "rl-%s-nrls-1-rate-%s-run-%s" % (rl, rate, run)
 
 def E(lst):
     return list(enumerate(lst))
@@ -53,20 +63,23 @@ def get_rl_colour(rl):
     return colour_rl[rl]
 
 for (i,rl), (j,rate) in itertools.product(E(rls), E(rates)):
-    dir = DIR(rl, rate)
-    ethstats_fname = os.path.join(args.dir, dir, "net.txt")
-    mpstat_fname = os.path.join(args.dir, dir, "mpstat.txt")
+    ys = []
+    for run in runs:
+        dir = DIR(rl, rate, run)
+        ethstats_fname = os.path.join(args.dir, dir, "net.txt")
+        mpstat_fname = os.path.join(args.dir, dir, "mpstat.txt")
 
-    estats = EthstatsParser(ethstats_fname)
-    mpstats = MPStatParser(mpstat_fname)
+        estats = EthstatsParser(ethstats_fname)
+        mpstats = MPStatParser(mpstat_fname)
 
-    #rates = estats.parse()
-    summ = estats.summary()
-    print rl, rate, summ, mpstats.summary()
+        #rates = estats.parse()
+        summ = estats.summary()
+        print rl, rate, summ, run, mpstats.summary()
+        ys.append(mpstats.kernel())
 
     x = j * (len(rls) + 1) + i
-    y = mpstats.kernel()
-    bar = plt.bar(x, y, width=1, color=get_rl_colour(rl))
+    bar = plt.bar(x, mean(ys), width=1, color=get_rl_colour(rl),
+                  yerr=stdev(ys), ecolor='red')
     rl_bar[rl] = bar[0]
 
 plt.legend([rl_bar[rl] for rl in rls],
