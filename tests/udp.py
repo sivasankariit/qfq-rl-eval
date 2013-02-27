@@ -6,6 +6,7 @@ import termcolor as T
 from expt import Expt
 from time import sleep
 from host import *
+from site_config import *
 import os
 
 parser = argparse.ArgumentParser(description="Netperf Test for various rate limiters.")
@@ -90,8 +91,7 @@ parser.add_argument('--dryrun',
 parser.add_argument('--hosts',
                     dest="hosts",
                     help="The two hosts (server/client) to run tests",
-                    nargs="+",
-                    default=["e2","e1"])
+                    nargs="+", default=config['DEFAULT_HOSTS'])
 
 parser.add_argument('--rate',
                     dest="rate",
@@ -123,7 +123,7 @@ class UDP(Expt):
         ns = self.opts("ns")
         nc = self.opts("nrr")
         dir = self.opts("exptid")
-        #server = self.opts("hosts")[0]
+        server = self.opts("hosts")[0]
         client = self.opts("hosts")[1]
         startport = self.opts("startport")
 
@@ -177,7 +177,7 @@ class UDP(Expt):
             rate = self.opts("rate") / nprogs
 
         self.client.start_n_udp(num_senders, nprogs,
-                                socket.gethostbyname(client), startport,
+                                socket.gethostbyname(server), startport,
                                 rate, dir=e(''))
         return
 

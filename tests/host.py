@@ -5,17 +5,10 @@ import termcolor as T
 import os
 import socket
 from time import sleep
+from site_config import *
 import pexpect
 import math
 
-RL_MODULE_NAME='newrl'
-RL_MODULE = '/root/vimal/prl/newrl.ko'
-DEFAULT_DEV = 'eth2'
-NETPERF_DIR = '/root/vimal'
-NETPERF_DIR = '/usr/local/bin'
-NETPERF_DIR = '/root/vimal/exports/netperf'
-SHELL_PROMPT = '#'
-UDP = '/root/vimal/rl-qfq/utils/udp'
 
 class HostList(object):
     def __init__(self, *lst):
@@ -67,7 +60,7 @@ class SSHWrapper:
 
     def cmd(self, c):
         self.ssh.sendline(c)
-        self.ssh.expect(SHELL_PROMPT)
+        self.ssh.expect(config['SHELL_PROMPT'])
 
 class Host(object):
     _ssh_cache = {}
@@ -88,7 +81,7 @@ class Host(object):
         ssh = Host._ssh_cache.get(self.sshaddr, None)
         if ssh is None:
             ssh = pexpect.spawn("ssh %s" % self.sshaddr, timeout=120)
-            ssh.expect(SHELL_PROMPT)
+            ssh.expect(config['SHELL_PROMPT'])
             Host._ssh_cache[self.sshaddr] = ssh
         return ssh
 
@@ -151,7 +144,7 @@ class Host(object):
         print "%s: %s" % (addr, c)
 
     def get_10g_dev(self):
-        return DEFAULT_DEV
+        return config['DEFAULT_DEV']
 
     def mkdir(self, dir):
         self.cmd("mkdir -p %s" % dir)
@@ -163,10 +156,10 @@ class Host(object):
             return
         self.cmd("rm -rf %s" % dir)
 
-    def rmmod(self, mod=RL_MODULE_NAME):
+    def rmmod(self, mod=config['RL_MODULE_NAME']):
         self.cmd("rmmod %s" % mod)
 
-    def insmod(self, mod=RL_MODULE, rmmod=True, rate=5000, nrls=1):
+    def insmod(self, mod=config['RL_MODULE'], rmmod=True, rate=5000, nrls=1):
         dev = self.get_10g_dev()
         params="dev=%s ntestrls=%s rate=%s" % (dev, nrls, rate)
         cmd = "insmod %s %s" % (mod, params)
@@ -179,8 +172,7 @@ class Host(object):
         self.cmd("sysctl -w net.ipv6.conf.%s.disable_ipv6=1;" % dev)
 
     def insmod_qfq(self):
-        QFQ_PATH = "/root/vimal/rl-qfq/sch_qfq.ko"
-        self.cmd("rmmod sch_qfq; insmod %s" % QFQ_PATH)
+        self.cmd("rmmod sch_qfq; insmod %s" % config['QFQ_PATH'])
         self.disable_ipv6()
         return
 
@@ -250,8 +242,7 @@ class Host(object):
 
     def qfq_stats(self, dir):
         iface = self.get_10g_dev()
-        TC = '/root/vimal/rl-qfq/iproute2/tc/tc'
-        c = "%s -s class show dev %s > %s/qfq-stats.txt" % (TC, iface, dir)
+        c = "%s -s class show dev %s > %s/qfq-stats.txt" % (config['TC'], iface, dir)
         self.cmd(c)
 
     def add_qfq_qdisc(self, rate='5000', mtu=1500, nclass=8, startport=1000):
@@ -324,19 +315,19 @@ class Host(object):
 
     # starting common apps
     def start_netserver(self):
-        self.cmd_async("%s/netserver" % NETPERF_DIR)
+        self.cmd_async("%s/netserver" % config['NETPERF_DIR'])
 
     def start_iperfserver(self):
         self.cmd_async("iperf -s")
 
     def start_netperf(self, args, outfile):
-        self.cmd_async("%s/netperf %s 2>&1 > %s" % (NETPERF_DIR, args, outfile))
+        self.cmd_async("%s/netperf %s 2>&1 > %s" % (config['NETPERF_DIR'], args, outfile))
 
     def start_n_netperfs(self, n, args, dir, outfile_prefix, pin=False):
         cmd = "for i in `seq 1 %s`; do (" % n
         if pin:
             cmd += "taskset -c $((i %% %d)) " % 24
-        cmd += " %s/netperf -s 10 %s 2>&1" % (NETPERF_DIR, args)
+        cmd += " %s/netperf -s 10 %s 2>&1" % (config['NETPERF_DIR'], args)
         cmd += " > %s/%s-$i.txt &);" % (dir, outfile_prefix)
         cmd += " done;"
         self.cmd(cmd)
@@ -364,7 +355,8 @@ class Host(object):
             outfile = '%s/udp-%d.txt' % (dir, nprogs)
             if dir is None:
                 outfile = '/dev/null'
-            cmd = "taskset -c %s %s %s %s %s %s %s > %s 2>&1" % (2, UDP, dest, startport, nclass, rate, burst, outfile)
+            cmd = "taskset -c %s %s %s %s %s %s %s > %s 2>&1" % (2, config['UDP'],
+                    dest, startport, nclass, rate, burst, outfile)
             self.cmd_async(cmd)
         return
 
@@ -408,8 +400,8 @@ class Host(object):
         return self.cmd_async(cmd)
 
     def start_qfq_monitor(self, dir):
-        cmd = "python /root/vimal/rl-qfq/utils/class-rate.py -i %s > %s/class-stats.txt"
-        cmd = cmd % (self.get_10g_dev(), dir)
+        cmd = "python %s -i %s > %s/class-stats.txt"
+        cmd = cmd % (config['CLASS_RATE'], self.get_10g_dev(), dir)
         self.cmd_async(cmd)
 
     def start_mpstat(self, dir):
