@@ -10,12 +10,28 @@ def cdf(lst):
         nums.append(cum)
     return vals, map(lambda n: n*1.0/cum, nums)
 
-def plot_cdf(x, y, **opts):
-    #plt.figure()
-    plt.plot(x, y, **opts)
-    if args.xlog:
-        plt.xscale("log")
-    #plt.show()
+def cdf_list(lst):
+    lst.sort()
+    prev = None
+    prev_count = 0
+    vals = []
+    nums = []
+    total = 0
+    for val in lst:
+        if prev is None:
+            prev = val
+        if val == prev:
+            prev_count += 1
+        else:
+            vals.append(prev)
+            total += prev_count
+            nums.append(total)
+            prev = val
+            prev_count = 1
+    vals.append(prev)
+    total += prev_count
+    nums.append(total)
+    return vals, map(lambda n: n * 1.0 / total, nums)
 
 def mean(l):
     return sum(l) * 1.0 / len(l)
