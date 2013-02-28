@@ -32,9 +32,11 @@ for run in 1 2 3; do
 	--ns $nrls # Same num of senders as rate limiters
 
     mv $exptid.tar.gz $dir/
+    mv $exptid-snf.tar.gz $dir/
 
     pushd $dir;
     tar xf $exptid.tar.gz
+    tar xf $exptid-snf.tar.gz
     #python ../plot.py --rr $exptid/* -o $exptid.png --ymin 0.9
     popd;
 done;

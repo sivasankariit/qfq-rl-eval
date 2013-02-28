@@ -21,6 +21,10 @@ if SITE == 'Vimal':
     # Server/client nodes
     config['DEFAULT_HOSTS'] = ["e2", "e1"]
 
+    # Sniffer host with Myri10G sniffer
+    config['SNIFFER_HOST'] = ''
+    config['SNIFFER'] = ''
+    config['SNIFFER_TMPDIR'] = ''
 
 elif SITE == 'Siva':
 
@@ -35,4 +39,9 @@ elif SITE == 'Siva':
     config['CLASS_RATE'] = '/home/ssradhak/src/rate_limiting/qfq-rl-eval/utils/class-rate.py'
 
     # Server/client nodes
-    config['DEFAULT_HOSTS'] = ["192.168.2.80", "192.168.2.66"]
+    config['DEFAULT_HOSTS'] = ['192.168.2.80", "192.168.2.81']
+
+    # Sniffer host with Myri10G sniffer
+    config['SNIFFER_HOST'] = ''
+    config['SNIFFER'] = '/home/ssradhak/src/rate_limiting/sniffer/tcpdump_tool/snf_simple_tcpdump'
+    config['SNIFFER_TMPDIR'] = '/home/ssradhak/tmp'

@@ -93,6 +93,11 @@ parser.add_argument('--hosts',
                     help="The two hosts (server/client) to run tests",
                     nargs="+", default=config['DEFAULT_HOSTS'])
 
+parser.add_argument('--sniffer',
+                    dest="sniffer",
+                    help="The sniffer machine to capture packet timings",
+                    default=config['SNIFFER_HOST'])
+
 parser.add_argument('--rate',
                     dest="rate",
                     type=int,
@@ -114,8 +119,8 @@ if args.rl == "none":
     print "Using userspace rate limiting"
     args.user = True
 
-def e(s):
-    return "/tmp/%s/%s" % (args.exptid, s)
+def e(s, tmpdir="/tmp"):
+    return "%s/%s/%s" % (tmpdir, args.exptid, s)
 
 class UDP(Expt):
     def start(self):
@@ -125,16 +130,23 @@ class UDP(Expt):
         dir = self.opts("exptid")
         server = self.opts("hosts")[0]
         client = self.opts("hosts")[1]
+        sniffer = self.opts("sniffer")
         startport = self.opts("startport")
 
         #self.server = Host(client)
         self.client = Host(client)
+        self.sniffer = Host(sniffer)
         self.hlist = HostList()
         #self.hlist.append(self.server)
         self.hlist.append(self.client)
 
         self.hlist.rmrf(e(""))
         self.hlist.mkdir(e(""))
+
+        if sniffer:
+            self.sniffer.rmrf(e("", tmpdir=config['SNIFFER_TMPDIR']))
+            self.sniffer.mkdir(e("", tmpdir=config['SNIFFER_TMPDIR']))
+            self.sniffer.cmd("killall -9 %s" % config['SNIFFER'])
 
         self.hlist.rmmod()
         self.hlist.killall("udp")
@@ -153,8 +165,8 @@ class UDP(Expt):
                 self.client.htb_class_filter_output(e(''))
         elif self.opts("rl") == "tbf":
             self.client.add_tbf_qdisc(str(args.rate) + "Mbit")
-	elif self.opts("rl") == "qfq":
-	    self.client.add_qfq_qdisc(str(args.rate), args.htb_mtu, nclass=args.nrls, startport=startport)
+        elif self.opts("rl") == "qfq":
+            self.client.add_qfq_qdisc(str(args.rate), args.htb_mtu, nclass=args.nrls, startport=startport)
         elif self.opts("rl") == "eyeq":
             self.client.insmod(rate=args.rate)
 
@@ -164,6 +176,8 @@ class UDP(Expt):
             self.client.start_qfq_monitor(e(''))
         self.client.start_mpstat(e(''))
         self.client.set_mtu(self.opts("mtu"))
+        if sniffer:
+            self.sniffer.start_sniffer(e('', tmpdir=config['SNIFFER_TMPDIR']), 0)
         sleep(1)
         nprogs = 1
         # Vimal: Initially I kept this rate = 10000, so the kernel
@@ -178,7 +192,7 @@ class UDP(Expt):
 
         self.client.start_n_udp(num_senders, nprogs,
                                 socket.gethostbyname(server), startport,
-                                rate, dir=e(''))
+                                rate, burst=4096, dir=e(''))
         return
 
     def stop(self):
@@ -187,7 +201,13 @@ class UDP(Expt):
         sleep(10)
         self.hlist.stop_qfq_monitor()
         self.hlist.killall("iperf netperf netserver ethstats udp")
+        if sniffer:
+            self.sniffer.stop_sniffer()
         self.client.copy_local(e(''), self.opts("exptid"))
+        if sniffer:
+            self.sniffer.copy_local(e('', tmpdir=config['SNIFFER_TMPDIR']),
+                                    self.opts("exptid") + "-snf",
+                                    tmpdir=config['SNIFFER_TMPDIR'])
         return
 
 UDP(vars(args)).run()

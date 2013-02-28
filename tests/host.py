@@ -100,6 +100,7 @@ class Host(object):
                 return (self.addr, c)
             ssh = self.get()
             self.get_shell().cmd(c)
+            ssh.expect(config['SHELL_PROMPT'])
             return (self.addr, c)
         else:
             self.delayed_cmds.append(c)
@@ -411,6 +412,21 @@ class Host(object):
         cmd = "mpstat 1 -A > %s/mpstat-all.txt" % dir
         self.cmd_async(cmd)
 
+    def start_sniffer(self, dir="/tmp", board=0):
+        # board 0 = captures Tx, board 1 = captures Rx
+        dir = os.path.abspath(dir)
+        path = os.path.join(dir, "pkt_snf.txt")
+        self.cmd("mkdir -p %s" % dir)
+        cmd = "%s -b %d -f %s" % (config['SNIFFER'], board, path)
+        return self.cmd_async(cmd)
+
+    def stop_sniffer(self):
+        self.cmd("killall -s INT %s" % config['SNIFFER'])
+        print 'waiting for sniffer to flush data...'
+        #self.cmd("wait `pidof -s %s`" % config['SNIFFER'])
+        self.cmd("while (pidof -s %s > /dev/null); do sleep 1; done" % config['SNIFFER'])
+        #sleep(120)
+
     def stop_mpstat(self):
         self.cmd("killall -9 mpstat")
 
@@ -422,18 +438,19 @@ class Host(object):
         return [self.start_cpu_monitor(dir),
                 self.start_bw_monitor(dir)]
 
-    def copy_local(self, src_dir="/tmp", exptid=None):
+    def copy_local(self, src_dir="/tmp", exptid=None, tmpdir="/tmp"):
         """Copy remote experiment output to a local directory for analysis"""
-        if src_dir == "/tmp":
+        if src_dir == tmpdir:
             return
         if exptid is None:
             print "Please supply experiment id"
             return
 
         # First compress output
-        self.cmd("tar czf /tmp/%s.tar.gz %s --transform='s|tmp/||'" % (exptid, src_dir))
+        self.cmd("tar czf %s/%s.tar.gz %s --transform='s|%s/||'" % (tmpdir,
+                 exptid, src_dir, tmpdir.lstrip('/')))
         opts = "-o StrictHostKeyChecking=no"
-        c = "scp %s -r %s:/tmp/%s.tar.gz ." % (opts, self.hostname(), exptid)
+        c = "scp %s -r %s:%s/%s.tar.gz ." % (opts, self.hostname(), tmpdir, exptid)
         print "Copying experiment output"
         local_cmd(c)
 
