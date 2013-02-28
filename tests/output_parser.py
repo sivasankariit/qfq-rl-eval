@@ -73,3 +73,49 @@ class MPStatParser:
         msys = mean(self.usage["sys"])
         msirq = mean(self.usage["sirq"])
         return msys + msirq
+
+
+class SnifferParser:
+    def __init__(self, filename, max_lines=10000, ignore_first=100, ignore_last=100):
+        self.filename = filename
+        self.max_lines = max_lines
+        self.ignore_first = ignore_first
+        self.ignore_last = ignore_last
+
+        self.lines = open(filename).xreadlines()
+        # Ignore first line
+        self.lines.next()
+        self.parse()
+
+    def parse_line(self, line):
+        nsec, _, _, packet_len, port = line.strip().split(' ')
+        nsec = nsec.split('.')[0]
+        return int(nsec), int(packet_len)
+
+    def parse(self):
+        line_num = 0
+        data = []
+        prev_nsec = 0
+        for line in self.lines:
+            line_num += 1
+            d = self.parse_line(line)
+            if line_num == 1:
+                prev_nsec = d[0]
+            else:
+                nsec, packet_len = d
+                delta = nsec - prev_nsec
+                prev_nsec = nsec
+                data.append((delta, packet_len))
+        self.data = data[self.ignore_first:-self.ignore_last]
+        self.ipt = map(lambda e: e[0], self.data)
+        self.ipt.sort()
+
+    def get_ipt(self):
+        return self.ipt
+
+    def summary(self):
+        avg = mean(self.ipt)
+        L = len(self.ipt)
+        pc99 = self.ipt[int(0.99 * L)]
+        return avg, pc99
+
