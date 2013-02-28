@@ -81,6 +81,7 @@ class SnifferParser:
         self.max_lines = max_lines
         self.ignore_first = ignore_first
         self.ignore_last = ignore_last
+        self.seen_packet_len = []
 
         self.lines = open(filename).xreadlines()
         # Ignore first line
@@ -99,6 +100,7 @@ class SnifferParser:
         for line in self.lines:
             line_num += 1
             d = self.parse_line(line)
+            len = d[1]
             if line_num == 1:
                 prev_nsec = d[0]
             else:
@@ -106,6 +108,8 @@ class SnifferParser:
                 delta = nsec - prev_nsec
                 prev_nsec = nsec
                 data.append((delta, packet_len))
+            if len not in self.seen_packet_len:
+                self.seen_packet_len.append(len)
         self.data = data[self.ignore_first:-self.ignore_last]
         self.ipt = map(lambda e: e[0], self.data)
         self.ipt.sort()
