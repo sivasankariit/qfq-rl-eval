@@ -21,6 +21,13 @@ if SITE == 'Vimal':
     # Server/client nodes
     config['DEFAULT_HOSTS'] = ["e2", "e1"]
 
+    # NIC details
+    config['NIC_VENDOR'] = 'Emulex'
+    config['NIC_HW_QUEUES'] = 4
+
+    # Taskset CPU for UDP program
+    config['UDP_CPU'] = 2
+
     '''
     CPU numbering on lancelots:
 
@@ -57,6 +64,13 @@ elif SITE == 'Siva':
 
     # Server/client nodes
     config['DEFAULT_HOSTS'] = ['192.168.2.80', '192.168.2.81']
+
+    # NIC details
+    config['NIC_VENDOR'] = 'Intel'
+    config['NIC_HW_QUEUES'] = 16
+
+    # Taskset CPU for single UDP program
+    config['UDP_CPU'] = 2
 
     '''
     CPU numbering on SEED testbed (dcswitch81):

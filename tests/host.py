@@ -228,6 +228,24 @@ class Host(object):
         c  = "sudo tc -s filter show dev %s > %s/htb-filter.txt" % (dev, dir)
         self.cmd(c)
 
+    def add_hw_rate_limit(self, rate='5000', queue=2):
+        # rate in Mbps
+        iface = self.get_10g_dev()
+        self.remove_qdiscs()
+        self.rmmod()
+        c  = "echo %s | sudo tee " % rate
+        c += "/sys/class/net/%s/queues/tx-%d/tx_rate_limit > " % (iface, queue)
+        c += "/dev/null"
+        self.cmd(c)
+
+    def clear_hw_rate_limits(self, numqueues=16):
+        iface = self.get_10g_dev()
+        c  = "maxqueue=`echo $[%d - 1]`; " % numqueues
+        c += "for queue in `seq 0 $maxqueue`; do "
+        c += "  echo 0 | sudo tee /sys/class/net/%s/queues/tx-$(queue)/tx_rate_limit > /dev/null; " % iface
+        c += "done;"
+        self.cmd(c)
+
     def set_mtu(self, mtu=1500):
         iface = self.get_10g_dev()
         c = "sudo ifconfig %s mtu %s" % (iface, mtu)
@@ -360,8 +378,8 @@ class Host(object):
             outfile = '%s/udp-%d.txt' % (dir, nprogs)
             if dir is None:
                 outfile = '/dev/null'
-            cmd = "taskset -c %s %s %s %s %s %s %s > %s 2>&1" % (2, config['UDP'],
-                    dest, startport, nclass, rate, burst, outfile)
+            cmd = "taskset -c %d %s %s %s %s %s %s > %s 2>&1" % (config['UDP_CPU'],
+                  config['UDP'], dest, startport, nclass, rate, burst, outfile)
             self.cmd_async(cmd)
         return
 

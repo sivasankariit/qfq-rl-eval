@@ -67,7 +67,7 @@ parser.add_argument('--exptid',
 parser.add_argument('--rl',
                     dest="rl",
                     help="Which rate limiter to use",
-                    choices=["htb", "qfq", 'none', "tbf", "eyeq"],
+                    choices=["htb", "qfq", 'none', "tbf", "eyeq", "hwrl"],
                     default="")
 
 parser.add_argument('--time', '-t',
@@ -118,6 +118,11 @@ args = parser.parse_args()
 if args.rl == "none":
     print "Using userspace rate limiting"
     args.user = True
+elif args.rl == "hwrl":
+    if not config["NIC_VENDOR"] == "Intel":
+        print "Hardware rate limiting only available on Intel NICs"
+        sys.exit(-1)
+    print "Using Intel hardware rate limiting"
 
 def e(s, tmpdir="/tmp"):
     return "%s/%s/%s" % (tmpdir, args.exptid, s)
@@ -151,6 +156,8 @@ class UDP(Expt):
         self.hlist.rmmod()
         self.hlist.killall("udp")
         self.hlist.remove_qdiscs()
+        if config["NIC_VENDOR"] == "Intel":
+            self.client.clear_hw_rate_limits(numqueues=config['NIC_HW_QUEUES'])
         #self.hlist.insmod_qfq()
         num_senders = self.opts("ns")
         if self.opts("rl") == "htb":
@@ -169,6 +176,9 @@ class UDP(Expt):
             self.client.add_qfq_qdisc(str(args.rate), args.htb_mtu, nclass=args.nrls, startport=startport)
         elif self.opts("rl") == "eyeq":
             self.client.insmod(rate=args.rate)
+        elif self.opts("rl") == "hwrl":
+            self.client.add_hw_rate_limit(rate=args.rate,
+                                          queue=config['UDP_CPU'])
 
         self.client.start_cpu_monitor(e(''))
         self.client.start_bw_monitor(e(''))
@@ -207,6 +217,8 @@ class UDP(Expt):
                                     self.opts("exptid") + "-snf",
                                     tmpdir=config['SNIFFER_TMPDIR'])
         self.client.copy_local(e(''), self.opts("exptid"))
+        if config["NIC_VENDOR"] == "Intel":
+            self.client.clear_hw_rate_limits(numqueues=config['NIC_HW_QUEUES'])
         return
 
 UDP(vars(args)).run()
