@@ -439,7 +439,8 @@ class Host(object):
         dir = os.path.abspath(dir)
         path = os.path.join(dir, "pkt_snf.txt")
         self.cmd("mkdir -p %s" % dir)
-        cmd = "%s -b %d -f %s" % (config['SNIFFER'], board, path)
+        cmd = "taskset -c %d %s -b %d -f %s" % (config['SNIFFER_CPU'],
+              config['SNIFFER'], board, path)
         return self.cmd_async(cmd)
 
     def stop_sniffer(self):

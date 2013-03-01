@@ -49,6 +49,7 @@ if SITE == 'Vimal':
     config['SNIFFER_HOST'] = ''
     config['SNIFFER'] = ''
     config['SNIFFER_TMPDIR'] = ''
+    config['SNIFFER_CPU'] = 2
 
 elif SITE == 'Siva':
 
@@ -91,3 +92,4 @@ elif SITE == 'Siva':
     config['SNIFFER_HOST'] = ''
     config['SNIFFER'] = '/home/ssradhak/src/rate_limiting/sniffer/tcpdump_tool/snf_simple_tcpdump'
     config['SNIFFER_TMPDIR'] = '/home/ssradhak/tmp'
+    config['SNIFFER_CPU'] = 2
