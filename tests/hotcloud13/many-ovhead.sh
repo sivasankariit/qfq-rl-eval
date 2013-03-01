@@ -4,7 +4,7 @@ dir=`date +%b%d--%H-%M`
 time=40
 ns=0
 start=`date`
-dev=eth2
+dev=eth1
 mtu=9000
 
 function finish {
@@ -13,7 +13,7 @@ function finish {
 }
 
 trap finish SIGINT
-python ../utils/set-affinity.py $dev
+sudo python ../utils/set-affinity.py $dev
 
 mkdir -p $dir
 for rate in 1000 3000 5000 7000 9000; do

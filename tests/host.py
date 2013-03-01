@@ -177,20 +177,20 @@ class Host(object):
         self.cmd("sysctl -w net.ipv6.conf.%s.disable_ipv6=1;" % dev)
 
     def insmod_qfq(self):
-        self.cmd("rmmod sch_qfq; insmod %s" % config['QFQ_PATH'])
+        self.cmd("sudo rmmod sch_qfq; insmod %s" % config['QFQ_PATH'])
         self.disable_ipv6()
         return
 
     def remove_qdiscs(self):
         iface = self.get_10g_dev()
-        self.cmd("tc qdisc del dev %s root" % iface)
+        self.cmd("sudo tc qdisc del dev %s root" % iface)
 
     def add_htb_qdisc(self, rate='5Gbit', mtu=1500):
         iface = self.get_10g_dev()
         self.remove_qdiscs()
         self.rmmod()
-        c  = "tc qdisc add dev %s root handle 1: htb default 1;" % iface
-        c += "tc class add dev %s classid 1:1 parent 1: " % iface
+        c  = "sudo tc qdisc add dev %s root handle 1: htb default 1;" % iface
+        c += "sudo tc class add dev %s classid 1:1 parent 1: " % iface
         c += "htb rate %s mtu %s burst 15k;" % (rate, mtu)
         self.cmd(c)
 
@@ -200,15 +200,15 @@ class Host(object):
         self.num_hash = num_hash
         self.hash_mask = hex((1 << num_hash_bits) - 1)
         dev = self.get_10g_dev()
-        c  = "tc filter add dev %s parent 1: prio 1 protocol all u32; " % dev
-        c += "tc filter add dev %s parent 1: prio 1 handle 2: protocol all u32 divisor %s; " % (dev, num_hash)
-        c += "tc filter add dev %s protocol all parent 1: prio 1 u32 ht 800::  match ip protocol 0 0 hashkey mask %s at 20  link 2:; " % (dev, self.hash_mask)
+        c  = "sudo tc filter add dev %s parent 1: prio 1 protocol all u32; " % dev
+        c += "sudo tc filter add dev %s parent 1: prio 1 handle 2: protocol all u32 divisor %s; " % (dev, num_hash)
+        c += "sudo tc filter add dev %s protocol all parent 1: prio 1 u32 ht 800::  match ip protocol 0 0 hashkey mask %s at 20  link 2:; " % (dev, self.hash_mask)
         self.cmd(c)
 
     def add_one_htb_class(self, rate='5Gbit', ceil='5Gbit', port=1000, klass=1):
         dev = self.get_10g_dev()
-        c  = "tc class add dev %s classid 1:%d parent 1: htb rate %s ceil %s; " % (dev, klass, rate, ceil)
-        c += "tc filter add dev %s protocol all parent 1: prio 1 u32 ht 2:%d: match ip dport %d %d flowid 1:%d" % (dev, hash, port, self.hash_mask, klass)
+        c  = "sudo tc class add dev %s classid 1:%d parent 1: htb rate %s ceil %s; " % (dev, klass, rate, ceil)
+        c += "sudo tc filter add dev %s protocol all parent 1: prio 1 u32 ht 2:%d: match ip dport %d %d flowid 1:%d" % (dev, hash, port, self.hash_mask, klass)
         self.cmd(c)
 
     def add_n_htb_class(self, rate='5Gbit', ceil='5Gbit', start_port=1000, num_class=8):
@@ -216,34 +216,34 @@ class Host(object):
         dev = self.get_10g_dev()
         c  = "for klass in `seq %s %s`; do " % (start_port, start_port + num_class)
         c += "  hexclass=`perl -e \"printf('%%x', $klass %% %s)\"`; " % (num_hash)
-        c += "  tc filter add dev %s protocol all parent 1: prio 1 u32 ht 2:$hexclass: match ip dport $klass %s flowid 1:%s; " % (dev, self.hash_mask, "$klass")
-        c += "  tc class add dev %s classid 1:%s parent 1: htb rate %s ceil %s; " % (dev, "$klass", rate, ceil)
+        c += "  sudo tc filter add dev %s protocol all parent 1: prio 1 u32 ht 2:$hexclass: match ip dport $klass %s flowid 1:%s; " % (dev, self.hash_mask, "$klass")
+        c += "  sudo tc class add dev %s classid 1:%s parent 1: htb rate %s ceil %s; " % (dev, "$klass", rate, ceil)
         c += "done;"
         self.cmd(c)
 
     def htb_class_filter_output(self, dir):
         dev = self.get_10g_dev()
-        c  = "tc -s class show dev %s > %s/htb-class.txt" % (dev, dir)
+        c  = "sudo tc -s class show dev %s > %s/htb-class.txt" % (dev, dir)
         self.cmd(c)
-        c  = "tc -s filter show dev %s > %s/htb-filter.txt" % (dev, dir)
+        c  = "sudo tc -s filter show dev %s > %s/htb-filter.txt" % (dev, dir)
         self.cmd(c)
 
     def set_mtu(self, mtu=1500):
         iface = self.get_10g_dev()
-        c = "ifconfig %s mtu %s" % (iface, mtu)
+        c = "sudo ifconfig %s mtu %s" % (iface, mtu)
         self.cmd(c)
 
     def add_tbf_qdisc(self, rate='5Gbit'):
         iface = self.get_10g_dev()
         self.remove_qdiscs()
         self.rmmod()
-        c  = "tc qdisc add dev %s root handle 1: tbf limit 150000 rate %s burst 3000" % (iface, rate)
+        c  = "sudo tc qdisc add dev %s root handle 1: tbf limit 150000 rate %s burst 3000" % (iface, rate)
         self.cmd(c)
 
     def ifdown(self):
-        self.cmd("ifconfig %s down" % self.get_10g_dev())
+        self.cmd("sudo ifconfig %s down" % self.get_10g_dev())
     def ifup(self):
-        self.cmd("ifconfig %s up; sleep 5" % self.get_10g_dev())
+        self.cmd("sudo ifconfig %s up; sleep 5" % self.get_10g_dev())
 
     def qfq_stats(self, dir):
         iface = self.get_10g_dev()
@@ -255,11 +255,11 @@ class Host(object):
         self.remove_qdiscs()
         self.rmmod()
         self.ifdown()
-        c  = "tc qdisc add dev %s root handle 1: qfq;" % iface
+        c  = "sudo tc qdisc add dev %s root handle 1: qfq;" % iface
         self.cmd(c)
         c = "for klass in {%d..%d}; do " % (startport, startport+nclass-1)
-        c += "  tc class add dev %s parent 1: classid 1:$klass qfq weight %s maxpkt 2048; " % (iface, rate)
-        c += "  tc filter add dev %s parent 1: protocol all prio 1 u32 match ip dport $klass 0xffff flowid 1:$klass; " % (iface)
+        c += "  sudo tc class add dev %s parent 1: classid 1:$klass qfq weight %s maxpkt 2048; " % (iface, rate)
+        c += "  sudo tc filter add dev %s parent 1: protocol all prio 1 u32 match ip dport $klass 0xffff flowid 1:$klass; " % (iface)
         c += "done;"
         """
         for klass in xrange((1 << bits) +1):
@@ -273,8 +273,8 @@ class Host(object):
         self.cmd(c)
         c = ''
         # Default class
-        c += "tc class add dev %s parent 1: classid 1:1 qfq weight %s maxpkt 2048; " % (iface, rate)
-        c += "tc filter add dev %s parent 1: protocol all prio 2 u32 match u32 0 0 flowid 1:1; " % iface
+        c += "sudo tc class add dev %s parent 1: classid 1:1 qfq weight %s maxpkt 2048; " % (iface, rate)
+        c += "sudo tc filter add dev %s parent 1: protocol all prio 2 u32 match u32 0 0 flowid 1:1; " % iface
         self.cmd(c)
         self.ifup()
         self.disable_tso_gso()
@@ -282,26 +282,26 @@ class Host(object):
     def disable_tso_gso(self):
         # Disable tso/gso
         iface = self.get_10g_dev()
-        c = "ethtool -K %s gso off; ethtool -K %s tso off" % (iface, iface)
+        c = "sudo ethtool -K %s gso off; ethtool -K %s tso off" % (iface, iface)
         self.cmd(c)
 
     def qfq_add_root(self, rate_default=100):
         iface = self.get_10g_dev()
         self.remove_qdiscs()
         self.ifdown()
-        c = "tc qdisc add dev %s root handle 1: qfq;" % iface
+        c = "sudo tc qdisc add dev %s root handle 1: qfq;" % iface
         self.cmd(c)
         self.disable_tso_gso()
-        c += "tc class add dev %s parent 1: classid 1:1 qfq weight %s maxpkt 2048; " % (iface, rate_default)
-        c += "tc filter add dev %s parent 1: protocol all prio 2 u32 match u32 0 0 flowid 1:1; " % iface
+        c += "sudo tc class add dev %s parent 1: classid 1:1 qfq weight %s maxpkt 2048; " % (iface, rate_default)
+        c += "sudo tc filter add dev %s parent 1: protocol all prio 2 u32 match u32 0 0 flowid 1:1; " % iface
         self.cmd(c)
         self.ifup()
 
     def qfq_add_class(self, rate, dport):
         dev = self.get_10g_dev()
-        c = "tc class add dev %s parent 1: classid 1:%d qfq weight %s maxpkt 2048; " % (dev, dport, rate)
+        c = "sudo tc class add dev %s parent 1: classid 1:%d qfq weight %s maxpkt 2048; " % (dev, dport, rate)
         self.cmd(c)
-        c = "tc filter add dev %s parent 1: protocol all prio 1 u32 match ip dport %d 0xffff flowid 1:%d; " % (dev, dport, dport)
+        c = "sudo tc filter add dev %s parent 1: protocol all prio 1 u32 match ip dport %d 0xffff flowid 1:%d; " % (dev, dport, dport)
         self.cmd(c)
 
     def killall(self, extra=""):
@@ -354,7 +354,7 @@ class Host(object):
         # Start nprogs udp traffic sources, nclass per each program,
         # starting with @startport.  I assume each destination port is
         # one class.
-        self.cmd_async("unlimit -n 1024000")
+        self.cmd("sudo ulimit -n 1024000")
         while nprogs:
             nprogs -= 1
             outfile = '%s/udp-%d.txt' % (dir, nprogs)
@@ -427,9 +427,7 @@ class Host(object):
     def stop_sniffer(self):
         self.cmd("killall -s INT %s" % config['SNIFFER'])
         print 'waiting for sniffer to flush data...'
-        #self.cmd("wait `pidof -s %s`" % config['SNIFFER'])
         self.cmd("while (pidof -s %s > /dev/null); do sleep 1; done" % config['SNIFFER'])
-        #sleep(120)
 
     def stop_mpstat(self):
         self.cmd("killall -9 mpstat")
