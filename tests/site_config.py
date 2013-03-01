@@ -39,7 +39,7 @@ elif SITE == 'Siva':
     config['CLASS_RATE'] = '/home/ssradhak/src/rate_limiting/qfq-rl-eval/utils/class-rate.py'
 
     # Server/client nodes
-    config['DEFAULT_HOSTS'] = ['192.168.2.80", "192.168.2.81']
+    config['DEFAULT_HOSTS'] = ['192.168.2.80', '192.168.2.81']
 
     # Sniffer host with Myri10G sniffer
     config['SNIFFER_HOST'] = ''
