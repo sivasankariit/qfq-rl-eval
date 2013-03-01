@@ -1,4 +1,6 @@
 import sys, os
+sys.path.insert(0, os.path.abspath('../tests'))
+from site_config import *
 
 dev = sys.argv[1]
 mask = 1
@@ -20,7 +22,7 @@ RX-3 on CPU 5
 RX-4 on CPU 6
 """
 
-mappings = [0, 1, 3, 5, 6]
+mappings = config['INTR_MAPPING']
 
 for line in open('/proc/interrupts').xreadlines():
     if dev not in line:
@@ -29,9 +31,11 @@ for line in open('/proc/interrupts').xreadlines():
     nr = nr.strip()
 
     name = line.split(' ')[-1].strip()
+    if count == len(mappings):
+        count = 0
+        print 'Wrapped around interrupt mappings'
     mask = 1 << mappings[count]
     cmd = 'echo %x > /proc/irq/%s/smp_affinity' % (mask, nr)
     print name, cmd
     os.system(cmd)
     count += 1
-
