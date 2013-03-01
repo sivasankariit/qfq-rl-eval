@@ -28,6 +28,7 @@ parser.add_argument('--file', '-f',
                     required=True)
 
 parser.add_argument('--rate', '-r',
+                    type=float,
                     help="Line rate in Gb/s",
                     default=10)
 
