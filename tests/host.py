@@ -57,10 +57,11 @@ class SSHWrapper:
     def cmd_async(self, cmd):
         cmd = "(%s;) &" % cmd
         self.ssh.sendline(cmd)
+        self.ssh.expect(config['PEXPECT_PROMPT'])
 
     def cmd(self, c):
         self.ssh.sendline(c)
-        self.ssh.expect(config['SHELL_PROMPT'])
+        self.ssh.expect(config['PEXPECT_PROMPT'])
 
 class Host(object):
     _ssh_cache = {}
@@ -78,10 +79,14 @@ class Host(object):
         self.dryrun = state
 
     def get(self):
+        global config
         ssh = Host._ssh_cache.get(self.sshaddr, None)
         if ssh is None:
             ssh = pexpect.spawn("ssh %s" % self.sshaddr, timeout=120)
             ssh.expect(config['SHELL_PROMPT'])
+            config['PEXPECT_PROMPT'] = '\[PEXPECT\]\$ '
+            ssh.sendline('PS1="[PEXPECT]\$ "')
+            ssh.expect(config['PEXPECT_PROMPT'])
             Host._ssh_cache[self.sshaddr] = ssh
         return ssh
 
@@ -100,7 +105,6 @@ class Host(object):
                 return (self.addr, c)
             ssh = self.get()
             self.get_shell().cmd(c)
-            ssh.expect(config['SHELL_PROMPT'])
             return (self.addr, c)
         else:
             self.delayed_cmds.append(c)

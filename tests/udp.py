@@ -201,13 +201,12 @@ class UDP(Expt):
         sleep(10)
         self.hlist.stop_qfq_monitor()
         self.hlist.killall("iperf netperf netserver ethstats udp")
-        if sniffer:
+        if self.opts("sniffer"):
             self.sniffer.stop_sniffer()
-        self.client.copy_local(e(''), self.opts("exptid"))
-        if sniffer:
             self.sniffer.copy_local(e('', tmpdir=config['SNIFFER_TMPDIR']),
                                     self.opts("exptid") + "-snf",
                                     tmpdir=config['SNIFFER_TMPDIR'])
+        self.client.copy_local(e(''), self.opts("exptid"))
         return
 
 UDP(vars(args)).run()
