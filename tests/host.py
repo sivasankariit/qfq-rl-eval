@@ -242,7 +242,7 @@ class Host(object):
         iface = self.get_10g_dev()
         c  = "maxqueue=`echo $[%d - 1]`; " % numqueues
         c += "for queue in `seq 0 $maxqueue`; do "
-        c += "  echo 0 | sudo tee /sys/class/net/%s/queues/tx-$(queue)/tx_rate_limit > /dev/null; " % iface
+        c += "  echo 0 | sudo tee /sys/class/net/%s/queues/tx-$queue/tx_rate_limit > /dev/null; " % iface
         c += "done;"
         self.cmd(c)
 
