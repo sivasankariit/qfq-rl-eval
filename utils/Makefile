@@ -1,4 +1,4 @@
 
 all:
-	$(CC) udp.c -o udp
+	$(CC) udp.c -lrt -o udp
 

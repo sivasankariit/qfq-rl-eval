@@ -10,9 +10,11 @@
 #include <stdarg.h>
 #include <sys/resource.h>
 #include <sys/mman.h>
+#include <time.h>
 
 #define MAX_SOCKS (10000)
 #define USEC_PER_SEC (1000000)
+#define NSEC_PER_SEC (1000000000LLU)
 #define min(a,b) ((a)<(b) ? (a):(b))
 
 int BURST_BYTES = (1 << 22);
@@ -43,6 +45,10 @@ unsigned long long timeval_diff_usec(struct timeval *start, struct timeval *end)
 	return (end->tv_sec - start->tv_sec) * 1LLU * USEC_PER_SEC + end->tv_usec - start->tv_usec;
 }
 
+unsigned long long timespec_diff_nsec(struct timespec *start, struct timespec *end) {
+	return (end->tv_sec - start->tv_sec) * 1LLU * NSEC_PER_SEC + (end->tv_nsec - start->tv_nsec);
+}
+
 /* Returns the time it actually slept for.
  * Sets prev to the last measured timeval after the sleeptime.
  * If prev is not 0, then the function uses prev as the start time to sleep from
@@ -62,6 +68,22 @@ unsigned long long spin_sleep(int usec, struct timeval *prev) {
 
 	*prev = curr;
 	return timeval_diff_usec(&start, &curr);
+}
+
+unsigned long long spin_sleep_nsec(int nsec, struct timespec *prev) {
+	struct timespec start, curr;
+	if (prev->tv_sec == 0 && prev->tv_nsec == 0) {
+		clock_gettime(CLOCK_REALTIME, prev);
+	} else {
+		start = *prev;
+	}
+
+	do {
+		clock_gettime(CLOCK_REALTIME, &curr);
+	} while (timespec_diff_nsec(&start, &curr) < nsec);
+
+	*prev = curr;
+	return timespec_diff_nsec(&start, &curr);
 }
 
 int print_every(int usec, char *fmt, ...) {
@@ -109,7 +131,7 @@ inline int bytes_on_wire(int write_size) {
 
 int main(int argc, char**argv)
 {
-	int n, startport, i, rate_mbps, usec = 0, sent;
+	int n, startport, i, rate_mbps, usec = 0, nsec = 0, sent;
 	int slept, ret, sendbuff, send_size;
 	struct sockaddr_in cliaddr;
 	FILE *fp; int fd;
@@ -147,14 +169,17 @@ int main(int argc, char**argv)
 
 	sendbuff = 1 << 20;
 
-    if (rate_mbps > 0) {
-	    usec = bytes_on_wire(BURST_BYTES) * 8 / rate_mbps;
-        printf("Sleeping for %dus, sendbuff %d, send_size %d, burst %d, fd %d\n",
-               usec, sendbuff, send_size, BURST_BYTES, fd);
-    } else {
-        printf("App rate limiting disabled, sendbuff %d, send_size %d, burst %d, fd %d\n",
-               sendbuff, send_size, BURST_BYTES, fd);
-    }
+	if (rate_mbps > 0) {
+		usec = bytes_on_wire(BURST_BYTES) * 8 / rate_mbps;
+		nsec = bytes_on_wire(BURST_BYTES) * 8LLU * 1000 / rate_mbps;
+		usec = nsec / 1000;
+
+		printf("Sleeping for %dns (%dus), sendbuff %d, send_size %d, burst %d, fd %d\n",
+		       nsec, usec, sendbuff, send_size, BURST_BYTES, fd);
+	} else {
+		printf("App rate limiting disabled, sendbuff %d, send_size %d, burst %d, fd %d\n",
+		       sendbuff, send_size, BURST_BYTES, fd);
+	}
 
 	for (i = 0; i < n; i++) {
 		sockfd[i] = socket(AF_INET, SOCK_DGRAM, 0);
@@ -184,8 +209,13 @@ int main(int argc, char**argv)
 	}
 
 	struct timeval prev;
+	struct timespec prev_ns;
+
 	prev.tv_sec = 0;
 	prev.tv_usec = 0;
+
+	prev_ns.tv_sec = 0;
+	prev_ns.tv_nsec = 0;
 	printf("Starting %d udp ports of traffic to %s\n", n, argv[1]);
 
 	while (1) {
@@ -200,10 +230,11 @@ int main(int argc, char**argv)
 
 			if (sent >= BURST_BYTES) {
 				sent -= BURST_BYTES;
-                if (usec > 0) {
-				    slept = spin_sleep(usec, &prev);
-                    //print_every(USEC_PER_SEC, "Slept %dus, next %dus\n", slept, usec);
-                }
+
+				if (usec > 0) {
+					slept = spin_sleep_nsec(nsec, &prev_ns);
+					//print_every(USEC_PER_SEC, "Slept %dus, next %dus\n", slept, usec);
+				}
 			}
 		}
 	}
