@@ -2,6 +2,17 @@
 #
 # Change the SITE variable to run the experiments on different testbed setup
 
+import argparse
+import sys
+import types
+
+site_config_parser = argparse.ArgumentParser(description='Site config variables')
+
+site_config_parser.add_argument('--var', dest='var',
+                                help='Config variable to read', default='')
+
+#############
+
 SITE = 'Siva'
 
 config = {}
@@ -19,7 +30,7 @@ if SITE == 'Vimal':
     config['CLASS_RATE'] = '/root/vimal/rl-qfq/utils/class-rate.py'
 
     # Server/client nodes
-    config['DEFAULT_HOSTS'] = ["e2", "e1"]
+    config['DEFAULT_HOSTS'] = ['e2', 'e1']
 
     # NIC details
     config['NIC_VENDOR'] = 'Emulex'
@@ -51,6 +62,12 @@ if SITE == 'Vimal':
     config['SNIFFER_TMPDIR'] = ''
     config['SNIFFER_CPU'] = 2
 
+    # Experiment script configuration
+    config['EXPT_RATES'] = '1000 3000 5000 7000 9000'
+    config['EXPT_NRL'] = 1  # Number of experiment classes
+    config['EXPT_RL'] = 'none htb hwrl'
+    config['EXPT_RUN'] = '1 2 3'
+
 elif SITE == 'Siva':
 
     config['RL_MODULE_NAME'] = ''
@@ -64,7 +81,7 @@ elif SITE == 'Siva':
     config['CLASS_RATE'] = '/home/ssradhak/src/rate_limiting/qfq-rl-eval/utils/class-rate.py'
 
     # Server/client nodes
-    config['DEFAULT_HOSTS'] = ['192.168.2.80', '192.168.2.81']
+    config['DEFAULT_HOSTS'] = ['192.168.2.80', '192.168.2.64']
 
     # NIC details
     config['NIC_VENDOR'] = 'Intel'
@@ -89,7 +106,30 @@ elif SITE == 'Siva':
     config['INTR_MAPPING'] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 
     # Sniffer host with Myri10G sniffer
-    config['SNIFFER_HOST'] = ''
+    config['SNIFFER_HOST'] = 'dcswitch77'
     config['SNIFFER'] = '/home/ssradhak/src/rate_limiting/sniffer/tcpdump_tool/snf_simple_tcpdump'
     config['SNIFFER_TMPDIR'] = '/home/ssradhak/tmp'
     config['SNIFFER_CPU'] = 2
+
+    # Experiment script configuration
+    config['EXPT_RATES'] = '1000 3000 5000 7000 9000'
+    config['EXPT_NRL'] = 1  # Number of experiment classes
+    config['EXPT_RL'] = 'none htb hwrl'
+    config['EXPT_RUN'] = '1 2 3'
+
+##########################################################################
+# Use this as a script that returns value of a variable to be used in bash
+# scripts etc.
+##########################################################################
+
+def main(argv):
+    # Parse flags
+    args = site_config_parser.parse_args()
+    if args.var == '' or args.var not in config:
+        return
+
+    print config[args.var]
+
+
+if __name__ == '__main__':
+    main(sys.argv)
