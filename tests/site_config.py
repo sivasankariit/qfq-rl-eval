@@ -72,6 +72,9 @@ if SITE == 'Vimal':
     config['EXPT_RL'] = 'none htb hwrl'
     config['EXPT_RUN'] = '1 2 3'
 
+    # tmp directory for plotting sniffer graphs
+    config['PLOT_TMPDIR'] = '/tmp/'
+
 elif SITE == 'Siva':
 
     config['RL_MODULE_NAME'] = ''
@@ -114,7 +117,7 @@ elif SITE == 'Siva':
     # Sniffer host with Myri10G sniffer
     config['SNIFFER_HOST'] = 'dcswitch77'
     config['SNIFFER'] = '/home/ssradhak/src/rate_limiting/sniffer/tcpdump_tool/snf_simple_tcpdump'
-    config['SNIFFER_TMPDIR'] = '/home/ssradhak/tmp'
+    config['SNIFFER_TMPDIR'] = '/home/ssradhak/tmp/sniffer/'
     config['SNIFFER_CPU'] = 2
     config['SNIFFER_DELAY'] = 15 # Seconds to delay sniffer initially
     config['SNIFFER_DURATION'] = 10 # Seconds to sniff traffic
@@ -124,6 +127,9 @@ elif SITE == 'Siva':
     config['EXPT_NRL'] = 1  # Number of experiment classes
     config['EXPT_RL'] = 'none htb hwrl'
     config['EXPT_RUN'] = '1 2 3'
+
+    # tmp directory for plotting sniffer graphs
+    config['PLOT_TMPDIR'] = '/home/ssradhak/tmp/plot/'
 
 ##########################################################################
 # Use this as a script that returns value of a variable to be used in bash
