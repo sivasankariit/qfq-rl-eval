@@ -3,6 +3,7 @@ import sys
 import os
 
 sys.path.append(os.getcwd())
+sys.path.insert(0, os.path.abspath('../'))
 
 import argparse
 import termcolor as T
@@ -64,6 +65,21 @@ def plot_file(file):
     if args.out:
         print 'saved cdf to', args.out
         plt.savefig(args.out)
+        if args.out.endswith('.pdf'):
+            zoomed = args.out[:-4] + "_zoomed.pdf"
+            if ideal < 10000:
+                plt.xlim((0, 10000))
+            elif ideal <= 15000:
+                plt.xlim((0, 15000))
+            elif ideal <= 20000:
+                plt.xlim((0, 20000))
+            elif ideal <= 30000:
+                plt.xlim((0, 30000))
+            elif ideal <= 40000:
+                plt.xlim((0, 40000))
+            plt.title("CDF of inter-packet _time_ (not inter-packet gap) in nanosec [zoomed]")
+            plt.savefig(zoomed)
+            print 'saved zoomed cdf to', zoomed
     else:
         print 'displaying plot...'
         plt.show()
