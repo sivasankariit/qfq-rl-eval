@@ -14,19 +14,22 @@ function finish {
 trap finish SIGINT
 
 EXPT_RATES=`python site_config.py --var EXPT_RATES`
+EXPT_NCLASSES=`python site_config.py --var EXPT_NCLASSES`
 EXPT_NRL=`python site_config.py --var EXPT_NRL`
 EXPT_RL=`python site_config.py --var EXPT_RL`
 EXPT_RUN=`python site_config.py --var EXPT_RUN`
-dev=`python site_config.py --var DEFAULT_DEV`
+DEV=`python site_config.py --var DEFAULT_DEV`
+NUM_CPUS=`python site_config.py --var NUM_CPUS`
 
-sudo python ../utils/set-affinity.py $dev
+sudo python ../utils/set-affinity.py $DEV
 
 mkdir -p $dir
 for rate in $EXPT_RATES; do
 for nrls in $EXPT_NRL; do
 for rl in $EXPT_RL; do
+for nclasses in $EXPT_NCLASSES; do
 for run in $EXPT_RUN; do
-    exptid=rl-$rl-nrls-$nrls-rate-$rate-run-$run
+    exptid=rl-$rl-nrls-$nrls-rate-$rate-ncl-$nclasses-run-$run
     rate_per_rl=$(($rate/$nrls))
     python udp.py --nrr 0 \
         --exptid $exptid \
@@ -34,8 +37,9 @@ for run in $EXPT_RUN; do
         --rl $rl \
         --rate $rate_per_rl \
         --nrls $nrls \
-	--mtu $mtu \
-	--ns $nrls # Same num of senders as rate limiters
+        --mtu $mtu \
+        --num-class $nclasses \
+        --ns $NUM_CPUS # Same num of sender progs as CPUs
 
     mv $exptid.tar.gz $dir/
     mv $exptid-snf.tar.gz $dir/
@@ -49,6 +53,7 @@ for run in $EXPT_RUN; do
     #rm -f $exptid/pkt_snf.txt
     #python ../plot.py --rr $exptid/* -o $exptid.png --ymin 0.9
     popd;
+done;
 done;
 done;
 done;

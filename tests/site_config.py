@@ -68,6 +68,7 @@ if SITE == 'Vimal':
 
     # Experiment script configuration
     config['EXPT_RATES'] = '1000 3000 5000 7000 9000'
+    config['EXPT_NCLASSES'] = '1 8 16 512 2048 8192 16384'  # Number of traffic classes
     config['EXPT_NRL'] = 1  # Number of experiment classes
     config['EXPT_RL'] = 'none htb hwrl'
     config['EXPT_RUN'] = '1 2 3'
@@ -124,6 +125,7 @@ elif SITE == 'Siva':
 
     # Experiment script configuration
     config['EXPT_RATES'] = '1000 3000 5000 7000 9000'
+    config['EXPT_NCLASSES'] = '1 8 16 512 2048 8192 16384'  # Number of traffic classes
     config['EXPT_NRL'] = 1  # Number of experiment classes
     config['EXPT_RL'] = 'none htb hwrl'
     config['EXPT_RUN'] = '1 2 3'
