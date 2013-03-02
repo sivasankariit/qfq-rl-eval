@@ -36,7 +36,11 @@ for run in 1 2 3; do
 
     pushd $dir;
     tar xf $exptid.tar.gz
-    tar xf $exptid-snf.tar.gz
+    #tar xf $exptid-snf.tar.gz
+    #python ../hotcloud13/plot-sniffer.py -f $exptid/pkt_snf.txt \
+    #    -r `echo $[$rate / 1000]` \
+    #    -o $exptid/pkt_arr.pdf > $exptid/plot-sniffer-output.txt
+    #rm -f $exptid/pkt_snf.txt
     #python ../plot.py --rr $exptid/* -o $exptid.png --ymin 0.9
     popd;
 done;
