@@ -164,7 +164,7 @@ int main(int argc, char**argv)
 			return -1;
 		}
 
-		set_non_blocking(sockfd[i]);
+		//set_non_blocking(sockfd[i]);
 		if (setsockopt(sockfd[i], SOL_SOCKET, SO_SNDBUF, &sendbuff, sizeof(sendbuff)) < 0) {
 			perror("setsockopt sendbuff");
 			return -1;
