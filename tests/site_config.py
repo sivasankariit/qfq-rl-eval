@@ -38,6 +38,8 @@ if SITE == 'Vimal':
 
     # Taskset CPU for UDP program
     config['UDP_CPU'] = 2
+    config['NUM_CPUS'] = 8
+    config['EXCLUDE_CPUS'] = []
 
     '''
     CPU numbering on lancelots:
@@ -89,6 +91,8 @@ elif SITE == 'Siva':
 
     # Taskset CPU for single UDP program
     config['UDP_CPU'] = 2
+    config['NUM_CPUS'] = 16
+    config['EXCLUDE_CPUS'] = []
 
     '''
     CPU numbering on SEED testbed (dcswitch81):

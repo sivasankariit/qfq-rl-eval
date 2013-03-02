@@ -6,6 +6,7 @@ ns=0
 start=`date`
 dev=eth2
 mtu=9000
+cpus=8
 
 function finish {
     killall -9 ssh
@@ -30,7 +31,7 @@ for num_class in 8 512 2048 16384; do
         --nrls $nrls \
 	--mtu $mtu \
 	--num-class $num_class \
-	--ns $num_class
+	--ns $cpus
 
     mv $exptid.tar.gz $dir/
 

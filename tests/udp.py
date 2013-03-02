@@ -16,7 +16,6 @@ parser.add_argument('--proto',
                     default="tcp")
 
 parser.add_argument('--nstream',
-                    dest="ns",
                     type=int,
                     help="Number of TCP_STREAM flows.",
                     default=4)
@@ -47,7 +46,12 @@ parser.add_argument('--htb-mtu',
 parser.add_argument('--num-class',
                     help="Number of classes of traffic.",
                     type=int,
-                    default=None)
+                    default=1)
+
+parser.add_argument('--num-senders', '--ns',
+                    type=int,
+                    help="Number of sender programs spawned to send flows.",
+                    default=1)
 
 parser.add_argument('--mtu',
                     help="MTU parameter.",
@@ -55,7 +59,7 @@ parser.add_argument('--mtu',
 
 parser.add_argument('--pin',
                     dest="pin",
-                    help="Pin netperf to CPUs in round robin fashion.",
+                    help="Pin programs to CPUs in round robin fashion.",
                     action="store_true",
                     default=False)
 
@@ -159,15 +163,14 @@ class UDP(Expt):
         if config["NIC_VENDOR"] == "Intel":
             self.client.clear_hw_rate_limits(numqueues=config['NIC_HW_QUEUES'])
         #self.hlist.insmod_qfq()
-        num_senders = self.opts("ns")
+
         if self.opts("rl") == "htb":
             self.client.add_htb_qdisc(str(args.rate) + "Mbit", args.htb_mtu)
+            rate_str = '%.3fMbit' % (self.opts("rate") * 1.0 / self.opts("num_class"))
             if self.opts("num_class") is not None:
                 num_hash_bits = int(math.log(self.opts("num_class"), 2))
                 self.client.add_htb_hash(num_hash_bits=num_hash_bits)
-                self.client.add_n_htb_class(num_class=self.opts("num_class"))
-                num_senders = self.opts("num_class")
-
+                self.client.add_n_htb_class(rate=rate_str, num_class=self.opts("num_class"))
                 # Just verify that we have created all classes correctly.
                 self.client.htb_class_filter_output(e(''))
         elif self.opts("rl") == "tbf":
@@ -189,22 +192,24 @@ class UDP(Expt):
         if sniffer:
             self.sniffer.start_sniffer(e('', tmpdir=config['SNIFFER_TMPDIR']), 0)
         sleep(1)
-        nprogs = 1
+
+        num_senders = self.opts("num_senders")
+        num_class = self.opts("num_class")
         # Vimal: Initially I kept this rate = 10000, so the kernel
         # module will do all rate limiting.  But it seems like the
         # function __ip_route_output_key seems to consume a lot of CPU
         # usage at high packet rates, so I thought I better keep the
         # packet rate the same.
-        rate = self.opts("rate") / nprogs   # TODO: Probably not required
+        rate = self.opts("rate") / num_senders
         # If we want userspace rate limiting
         if self.opts("user") == True:
-            rate = self.opts("rate") / nprogs
+            rate = self.opts("rate") / num_senders
         else:
             rate = 0
 
-        self.client.start_n_udp(num_senders, nprogs,
+        self.client.start_n_udp(num_class, num_senders,
                                 socket.gethostbyname(server), startport,
-                                rate, burst=4096, dir=e(''))
+                                rate, burst=4096, dir=e(''), pin=self.opts("pin"))
         return
 
     def stop(self):

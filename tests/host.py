@@ -368,19 +368,27 @@ class Host(object):
         self.cmd_async(cmd)
         return
 
-    def start_n_udp(self, nclass, nprogs, dest, startport, rate=10000, burst=8850, dir=None):
+    def start_n_udp(self, nclass, nprogs, dest, startport, rate=10000, burst=8850, dir=None, pin=False):
         # Start nprogs udp traffic sources, nclass per each program,
         # starting with @startport.  I assume each destination port is
         # one class.
         self.cmd("sudo ulimit -n 1024000")
+        cpu = 0
         while nprogs:
             nprogs -= 1
             outfile = '%s/udp-%d.txt' % (dir, nprogs)
             if dir is None:
                 outfile = '/dev/null'
-            cmd = "taskset -c %d %s %s %s %s %s %s > %s 2>&1" % (config['UDP_CPU'],
-                  config['UDP'], dest, startport, nclass, rate, burst, outfile)
+            cmd = "%s %s %s %s %s %s > %s 2>&1"
+            cmd = cmd % (config['UDP'], dest, startport, nclass, rate, burst, outfile)
+            if pin:
+                cmd = "taskset -c %d %s" % (cpu, cmd)
             self.cmd_async(cmd)
+            cpu += 1
+            while cpu in config["EXCLUDE_CPUS"]:
+                cpu += 1
+                cpu %= config["NUM_CPUS"]
+            cpu %= config["NUM_CPUS"]
         return
 
     # Monitoring scripts
