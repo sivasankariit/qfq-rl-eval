@@ -195,10 +195,12 @@ class UDP(Expt):
         # function __ip_route_output_key seems to consume a lot of CPU
         # usage at high packet rates, so I thought I better keep the
         # packet rate the same.
-        rate = self.opts("rate") / nprogs
+        rate = self.opts("rate") / nprogs   # TODO: Probably not required
         # If we want userspace rate limiting
         if self.opts("user") == True:
             rate = self.opts("rate") / nprogs
+        else:
+            rate = 0
 
         self.client.start_n_udp(num_senders, nprogs,
                                 socket.gethostbyname(server), startport,

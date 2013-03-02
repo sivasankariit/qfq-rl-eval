@@ -109,8 +109,8 @@ inline int bytes_on_wire(int write_size) {
 
 int main(int argc, char**argv)
 {
-	int n, startport, i, rate_mbps, usec, sent;
-	int slept, TARGET, ret, sendbuff, send_size;
+	int n, startport, i, rate_mbps, usec = 0, sent;
+	int slept, ret, sendbuff, send_size;
 	struct sockaddr_in cliaddr;
 	FILE *fp; int fd;
 	off_t offset = 0;
@@ -145,13 +145,16 @@ int main(int argc, char**argv)
 	}
 */
 
-	usec = bytes_on_wire(BURST_BYTES) * 8 / rate_mbps;
-	TARGET = usec;
-
 	sendbuff = 1 << 20;
 
-	printf("Sleeping for %dus, sendbuff %d, send_size %d, burst %d, fd %d\n",
-	       usec, sendbuff, send_size, BURST_BYTES, fd);
+    if (rate_mbps > 0) {
+	    usec = bytes_on_wire(BURST_BYTES) * 8 / rate_mbps;
+        printf("Sleeping for %dus, sendbuff %d, send_size %d, burst %d, fd %d\n",
+               usec, sendbuff, send_size, BURST_BYTES, fd);
+    } else {
+        printf("App rate limiting disabled, sendbuff %d, send_size %d, burst %d, fd %d\n",
+               sendbuff, send_size, BURST_BYTES, fd);
+    }
 
 	for (i = 0; i < n; i++) {
 		sockfd[i] = socket(AF_INET, SOCK_DGRAM, 0);
@@ -197,8 +200,10 @@ int main(int argc, char**argv)
 
 			if (sent >= BURST_BYTES) {
 				sent -= BURST_BYTES;
-				slept = spin_sleep(usec, &prev);
-				//print_every(USEC_PER_SEC, "Slept %dus, next %dus\n", slept, usec);
+                if (usec > 0) {
+				    slept = spin_sleep(usec, &prev);
+                    //print_every(USEC_PER_SEC, "Slept %dus, next %dus\n", slept, usec);
+                }
 			}
 		}
 	}
