@@ -190,7 +190,9 @@ class UDP(Expt):
         self.client.start_mpstat(e(''))
         self.client.set_mtu(self.opts("mtu"))
         if sniffer:
-            self.sniffer.start_sniffer(e('', tmpdir=config['SNIFFER_TMPDIR']), 0)
+            self.sniffer.start_sniffer_delayed(e('', tmpdir=config['SNIFFER_TMPDIR']),
+                    board=0, delay=config['SNIFFER_DELAY'],
+                    duration=config['SNIFFER_DURATION'])
         sleep(1)
 
         num_senders = self.opts("num_senders")

@@ -456,6 +456,21 @@ class Host(object):
         print 'waiting for sniffer to flush data...'
         self.cmd("while (pidof -s %s > /dev/null); do sleep 1; done" % config['SNIFFER'])
 
+    def start_sniffer_delayed(self, dir="/tmp", board=0, delay=15, duration=10):
+        # board 0 = captures Tx, board 1 = captures Rx
+        dir = os.path.abspath(dir)
+        path = os.path.join(dir, "pkt_snf.txt")
+        self.cmd("mkdir -p %s" % dir)
+        # Start the sniffer after an initial delay
+        cmd = "sleep %s" % delay
+        cmd = "%s; taskset -c %d %s -b %d -f %s" % (cmd, config['SNIFFER_CPU'],
+                config['SNIFFER'], board, path)
+        self.cmd_async(cmd)
+        # Kill sniffer after appropriate duration
+        cmd = "sleep %s; killall -s INT %s" % (delay + duration,
+              config['SNIFFER'])
+        return self.cmd_async(cmd)
+
     def stop_mpstat(self):
         self.cmd("killall -9 mpstat")
 

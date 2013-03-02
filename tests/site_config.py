@@ -63,6 +63,8 @@ if SITE == 'Vimal':
     config['SNIFFER'] = ''
     config['SNIFFER_TMPDIR'] = ''
     config['SNIFFER_CPU'] = 2
+    config['SNIFFER_DELAY'] = 15 # Seconds to delay sniffer initially
+    config['SNIFFER_DURATION'] = 10 # Seconds to sniff traffic
 
     # Experiment script configuration
     config['EXPT_RATES'] = '1000 3000 5000 7000 9000'
@@ -114,6 +116,8 @@ elif SITE == 'Siva':
     config['SNIFFER'] = '/home/ssradhak/src/rate_limiting/sniffer/tcpdump_tool/snf_simple_tcpdump'
     config['SNIFFER_TMPDIR'] = '/home/ssradhak/tmp'
     config['SNIFFER_CPU'] = 2
+    config['SNIFFER_DELAY'] = 15 # Seconds to delay sniffer initially
+    config['SNIFFER_DURATION'] = 10 # Seconds to sniff traffic
 
     # Experiment script configuration
     config['EXPT_RATES'] = '1000 3000 5000 7000 9000'
