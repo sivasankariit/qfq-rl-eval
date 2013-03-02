@@ -127,6 +127,9 @@ elif args.rl == "hwrl":
         print "Hardware rate limiting only available on Intel NICs"
         sys.exit(-1)
     print "Using Intel hardware rate limiting"
+    # Pin to CPUs for hardware rate limiting so that all queues end up being
+    # used
+    args.pin = True
 
 def e(s, tmpdir="/tmp"):
     return "%s/%s/%s" % (tmpdir, args.exptid, s)
@@ -180,8 +183,12 @@ class UDP(Expt):
         elif self.opts("rl") == "eyeq":
             self.client.insmod(rate=args.rate)
         elif self.opts("rl") == "hwrl":
-            self.client.add_hw_rate_limit(rate=args.rate,
-                                          queue=config['UDP_CPU'])
+            num_hw_rl = min(config['NIC_HW_QUEUES'], self.opts("num_senders"))
+            hw_rate = self.opts("rate") / num_hw_rl
+            for q in xrange(0, num_hw_rl):
+                # First queue will account for remainder in rate limit
+                delta = 0 if not (q == 0) else self.opts("rate") % num_hw_rl
+                self.client.add_hw_rate_limit(rate=hw_rate + delta, queue=q)
 
         self.client.start_cpu_monitor(e(''))
         self.client.start_bw_monitor(e(''))
@@ -202,7 +209,10 @@ class UDP(Expt):
         # function __ip_route_output_key seems to consume a lot of CPU
         # usage at high packet rates, so I thought I better keep the
         # packet rate the same.
-        rate = self.opts("rate") / num_senders
+        # Siva: We won't be rate limiting in application unless we are measuring
+        # user level rate limiting. So it doesn't really matter.
+        ## rate = self.opts("rate") / num_senders
+
         # If we want userspace rate limiting
         if self.opts("user") == True:
             rate = self.opts("rate") / num_senders

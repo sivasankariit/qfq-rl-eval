@@ -231,8 +231,6 @@ class Host(object):
     def add_hw_rate_limit(self, rate='5000', queue=2):
         # rate in Mbps
         iface = self.get_10g_dev()
-        self.remove_qdiscs()
-        self.rmmod()
         c  = "echo %s | sudo tee " % rate
         c += "/sys/class/net/%s/queues/tx-%d/tx_rate_limit > " % (iface, queue)
         c += "/dev/null"
