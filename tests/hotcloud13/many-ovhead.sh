@@ -4,7 +4,6 @@ dir=`date +%b%d--%H-%M`
 time=40
 ns=0
 start=`date`
-dev=eth1
 mtu=9000
 
 function finish {
@@ -13,13 +12,20 @@ function finish {
 }
 
 trap finish SIGINT
+
+EXPT_RATES=`python site_config.py --var EXPT_RATES`
+EXPT_NRL=`python site_config.py --var EXPT_NRL`
+EXPT_RL=`python site_config.py --var EXPT_RL`
+EXPT_RUN=`python site_config.py --var EXPT_RUN`
+dev=`python site_config.py --var DEFAULT_DEV`
+
 sudo python ../utils/set-affinity.py $dev
 
 mkdir -p $dir
-for rate in 1000 3000 5000 7000 9000; do
-for nrls in 1; do
-for rl in none htb hwrl; do
-for run in 1 2 3; do
+for rate in $EXPT_RATES; do
+for nrls in $EXPT_NRL; do
+for rl in $EXPT_RL; do
+for run in $EXPT_RUN; do
     exptid=rl-$rl-nrls-$nrls-rate-$rate-run-$run
     rate_per_rl=$(($rate/$nrls))
     python udp.py --nrr 0 \
