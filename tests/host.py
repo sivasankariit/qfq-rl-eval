@@ -375,20 +375,24 @@ class Host(object):
         self.cmd("sudo ulimit -n 1024000")
         cpu = 0
 
+        # Default case: each program is responsible for its fraction
+        # of all classes.
         nclass_per_prog = nclass / nprogs
 
+        # But...
         if nclass < nprogs:
             print "Number of classes is less than number of programs."
             print "So, I am setting #programs = #classes"
             nprogs = nclass
             nclass_per_prog = 1
-            if rate > 0 and totalrate >= 8000:
-                print "But, since the rate is >= 8Gb/s, setting #programs = 2"
-                nprogs = 2
-                rate = totalrate / nprogs
         else:
             if nclass % nprogs != 0:
                 print "Warning: nclass % nprogs is not zero."
+
+        if rate >= 8000:
+            print "But, since the rate per program is >= 8Gb/s, doubling #programs"
+            nprogs *= 2
+            rate /= 2
 
         while nprogs:
             nprogs -= 1

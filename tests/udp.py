@@ -51,7 +51,7 @@ parser.add_argument('--num-class',
 parser.add_argument('--num-senders', '--ns',
                     type=int,
                     help="Number of sender programs spawned to send flows.",
-                    default=1)
+                    default=CONFIG['NUM_CPUS'])
 
 parser.add_argument('--mtu',
                     help="MTU parameter.",
