@@ -80,12 +80,6 @@ parser.add_argument('--time', '-t',
                     help="Time to run the experiment",
                     default=10)
 
-parser.add_argument('--nrls',
-                    dest="nrls",
-                    type=int,
-                    help="number of rate limiters (newrl)",
-                    default=1)
-
 parser.add_argument('--dryrun',
                     dest="dryrun",
                     help="Don't execute experiment commands.",
@@ -188,7 +182,7 @@ class UDP(Expt):
         elif self.opts("rl") == "tbf":
             self.client.add_tbf_qdisc(str(args.rate) + "Mbit")
         elif self.opts("rl") == "qfq":
-            self.client.add_qfq_qdisc(str(args.rate), args.htb_mtu, nclass=args.nrls, startport=startport)
+            self.client.add_qfq_qdisc(str(args.rate), args.htb_mtu, nclass=self.opts("num_class"), startport=startport)
         elif self.opts("rl") == "eyeq":
             self.client.insmod(rate=args.rate)
         elif self.opts("rl") == "hwrl":
