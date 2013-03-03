@@ -61,7 +61,7 @@ parser.add_argument('--pin',
                     dest="pin",
                     help="Pin programs to CPUs in round robin fashion.",
                     action="store_true",
-                    default=False)
+                    default=True)
 
 parser.add_argument('--exptid',
                     dest="exptid",
@@ -121,9 +121,6 @@ elif args.rl == "hwrl":
         print "Hardware rate limiting only available on Intel NICs"
         sys.exit(-1)
     print "Using Intel hardware rate limiting"
-    # Pin to CPUs for hardware rate limiting so that all queues end up being
-    # used
-    args.pin = True
 if args.num_class < args.num_senders:
     args.num_senders = args.num_class
     print "Number of classes is less than number of sender programs."
