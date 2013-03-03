@@ -366,19 +366,40 @@ class Host(object):
         self.cmd_async(cmd)
         return
 
-    def start_n_udp(self, nclass, nprogs, dest, startport, rate=10000, burst=8850, dir=None, pin=False):
+    def start_n_udp(self, nclass, nprogs, dest, startport,
+                    rate=10000, burst=8850, dir=None, pin=False,
+                    totalrate=10000):
         # Start nprogs udp traffic sources, nclass per each program,
         # starting with @startport.  I assume each destination port is
         # one class.
         self.cmd("sudo ulimit -n 1024000")
         cpu = 0
+
+        nclass_per_prog = nclass / nprogs
+
+        if nclass < nprogs:
+            print "Number of classes is less than number of programs."
+            print "So, I am setting #programs = #classes"
+            nprogs = nclass
+            nclass_per_prog = 1
+            if rate > 0 and totalrate >= 8000:
+                print "But, since the rate is >= 8Gb/s, setting #programs = 2"
+                nprogs = 2
+                rate = totalrate / nprogs
+        else:
+            if nclass % nprogs != 0:
+                print "Warning: nclass % nprogs is not zero."
+
         while nprogs:
             nprogs -= 1
             outfile = '%s/udp-%d.txt' % (dir, nprogs)
             if dir is None:
                 outfile = '/dev/null'
+
             cmd = "%s %s %s %s %s %s > %s 2>&1"
-            cmd = cmd % (config['UDP'], dest, startport, nclass, rate, burst, outfile)
+            cmd = cmd % (config["UDP"], dest, startport, nclass_per_prog, rate, burst, outfile)
+            startport += nclass_per_prog
+
             if pin:
                 cmd = "taskset -c %d %s" % (cpu, cmd)
             self.cmd_async(cmd)

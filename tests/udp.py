@@ -221,7 +221,8 @@ class UDP(Expt):
 
         self.client.start_n_udp(num_class, num_senders,
                                 socket.gethostbyname(server), startport,
-                                rate, burst=4096, dir=e(''), pin=self.opts("pin"))
+                                rate, burst=4096, dir=e(''), pin=self.opts("pin"),
+                                totalrate = self.opts("rate"))
         return
 
     def stop(self):
