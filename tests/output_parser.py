@@ -77,11 +77,10 @@ class MPStatParser:
 
 
 class SnifferParser:
-    def __init__(self, filename, max_lines=10000, ignore_first=100, ignore_last=100):
+    def __init__(self, filename, max_lines=10000, ignore_frac=0.1):
         self.filename = filename
         self.max_lines = max_lines
-        self.ignore_first = ignore_first
-        self.ignore_last = ignore_last
+        self.ignore_frac = ignore_frac
         self.seen_packet_len = []
 
         self.lines = open(filename).xreadlines()
@@ -118,7 +117,10 @@ class SnifferParser:
         self.data = defaultdict(list)
         self.ipt = defaultdict(list)
         for port in data.keys():
-            self.data[port] = data[port][self.ignore_first:-self.ignore_last]
+            self.data[port] = data[port]
+            if self.ignore_frac > 0:
+                L = int(self.data[port].__len__() * self.ignore_frac)
+                self.data[port] = self.data[port][L:-L]
             self.ipt[port] = map(lambda e: e[0], self.data[port])
             self.ipt[port].sort()
 

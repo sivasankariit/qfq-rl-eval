@@ -31,9 +31,13 @@ def cdf_list(lst):
     vals.append(prev)
     total += prev_count
     nums.append(total)
+    if total == 0:
+        return [], []
     return vals, map(lambda n: n * 1.0 / total, nums)
 
 def mean(l):
+    if len(l) == 0:
+        return 0
     return sum(l) * 1.0 / len(l)
 
 def stdev(l):
