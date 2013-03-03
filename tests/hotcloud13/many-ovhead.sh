@@ -23,6 +23,12 @@ NUM_CPUS=`python site_config.py --var NUM_CPUS`
 sudo python ../utils/set-affinity.py $DEV
 
 mkdir -p $dir
+touch $dir/expt_config.txt
+echo "EXPT_RATES = ${EXPT_RATES}" >> $dir/expt_config.txt
+echo "EXPT_NCLASSES = ${EXPT_NCLASSES}" >> $dir/expt_config.txt
+echo "EXPT_RL = ${EXPT_RL}" >> $dir/expt_config.txt
+echo "EXPT_RUN = ${EXPT_RUN}" >> $dir/expt_config.txt
+echo "NUM_CPUS = ${NUM_CPUS}" >> $dir/expt_config.txt
 for rate in $EXPT_RATES; do
 for rl in $EXPT_RL; do
 for nclasses in $EXPT_NCLASSES; do
