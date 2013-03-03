@@ -51,7 +51,7 @@ parser.add_argument('--num-class',
 parser.add_argument('--num-senders', '--ns',
                     type=int,
                     help="Number of sender programs spawned to send flows.",
-                    default=CONFIG['NUM_CPUS'])
+                    default=config['NUM_CPUS'])
 
 parser.add_argument('--mtu',
                     help="MTU parameter.",
@@ -105,7 +105,7 @@ parser.add_argument('--sniffer',
 parser.add_argument('--rate',
                     dest="rate",
                     type=int,
-                    help="rate per rate limiter",
+                    help="total rate limit",
                     default=1000)
 
 parser.add_argument('--user',
@@ -130,6 +130,15 @@ elif args.rl == "hwrl":
     # Pin to CPUs for hardware rate limiting so that all queues end up being
     # used
     args.pin = True
+if args.num_class < args.num_senders:
+    args.num_senders = args.num_class
+    print "Number of classes is less than number of sender programs."
+    print "So, I am setting #programs = #classes"
+if args.num_class == 1 and args.rate > 8000:
+    print "With Intel NIC, 1 sender program cannot push more than 8Gbps."
+    print "Using 2 sender programs and 2 classes instead"
+    args.num_senders = 2
+    args.num_class = 2
 
 def e(s, tmpdir="/tmp"):
     return "%s/%s/%s" % (tmpdir, args.exptid, s)
@@ -187,7 +196,7 @@ class UDP(Expt):
             hw_rate = self.opts("rate") / num_hw_rl
             for q in xrange(0, num_hw_rl):
                 # First queue will account for remainder in rate limit
-                delta = 0 if not (q == 0) else self.opts("rate") % num_hw_rl
+                delta = 1 if (q < self.opts("rate") % num_hw_rl) else 0
                 self.client.add_hw_rate_limit(rate=hw_rate + delta, queue=q)
 
         self.client.start_cpu_monitor(e(''))

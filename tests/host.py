@@ -378,21 +378,11 @@ class Host(object):
         # Default case: each program is responsible for its fraction
         # of all classes.
         nclass_per_prog = nclass / nprogs
+        if nclass % nprogs != 0:
+            print "Warning: nclass % nprogs is not zero."
+        if nclass_per_prog == 0:
+            print "Warning: nclass per prog is 0. No traffic will be generated"
 
-        # But...
-        if nclass < nprogs:
-            print "Number of classes is less than number of programs."
-            print "So, I am setting #programs = #classes"
-            nprogs = nclass
-            nclass_per_prog = 1
-        else:
-            if nclass % nprogs != 0:
-                print "Warning: nclass % nprogs is not zero."
-
-        if rate >= 8000:
-            print "But, since the rate per program is >= 8Gb/s, doubling #programs"
-            nprogs *= 2
-            rate /= 2
 
         while nprogs:
             nprogs -= 1
