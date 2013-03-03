@@ -157,15 +157,14 @@ int main(int argc, char**argv)
 	send_size = min(BURST_BYTES, 65536 - HEADER_SIZE);
 
 	fd = open(argv[0], O_RDONLY);
-/*
+
 	buff = mmap(NULL, send_size, PROT_READ,
-		    MAP_PRIVATE, fd, 0);
+		MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
 	if (buff == MAP_FAILED) {
 		perror("mmap");
 		return -1;
 	}
-*/
 
 	sendbuff = 1 << 20;
 
@@ -200,12 +199,14 @@ int main(int argc, char**argv)
 		servaddr[i].sin_addr.s_addr = inet_addr(argv[1]);
 		servaddr[i].sin_port = htons(startport + i);
 
+		/* No need to connect when using sendto()
 		if (connect(sockfd[i], (const struct sockaddr *)&servaddr[i],
 			    sizeof servaddr[i]))
 		{
 			perror("connect");
 			return -1;
 		}
+		*/
 	}
 
 	struct timeval prev;
@@ -222,7 +223,13 @@ int main(int argc, char**argv)
 		i = 0;
 		for (i = 0; i < n; i++) {
 			offset = 0;
-			ret = sendfile(sockfd[i], fd, &offset, send_size);
+			//ret = sendfile(sockfd[i], fd, &offset, send_size);
+			/* Always send on same socket to all dst ports */
+			ret = sendto(sockfd[0], buff,
+				     send_size, 0,
+				     (struct sockaddr *)&servaddr[i],
+				     sizeof(servaddr[i]));
+
 
 			if (ret != -1) {
 				sent += bytes_on_wire(send_size);
