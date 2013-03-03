@@ -1,5 +1,6 @@
 import re
 from helper import *
+from collections import defaultdict
 
 re_spaces = re.compile(r'\s+')
 IFACE = "eth2"
@@ -91,35 +92,45 @@ class SnifferParser:
     def parse_line(self, line):
         nsec, _, _, packet_len, port = line.strip().split(' ')
         nsec = nsec.split('.')[0]
-        return int(nsec), int(packet_len)
+        return int(nsec), int(packet_len), int(port)
 
     def parse(self):
         line_num = 0
-        data = []
-        prev_nsec = 0
+        data = defaultdict(list)
+        prev_nsec = defaultdict(int)
         for line in self.lines:
             line_num += 1
+            if line_num > self.max_lines:
+                break
             d = self.parse_line(line)
             len = d[1]
-            if line_num == 1:
-                prev_nsec = d[0]
+            port = d[2]
+            if prev_nsec[port] == 0:
+                prev_nsec[port] = d[0]
             else:
-                nsec, packet_len = d
-                delta = nsec - prev_nsec
-                prev_nsec = nsec
-                data.append((delta, packet_len))
+                nsec, packet_len, port = d
+                delta = nsec - prev_nsec[port]
+                prev_nsec[port] = nsec
+                # data.append((delta, packet_len))
+                data[port].append((delta, packet_len))
             if len not in self.seen_packet_len:
                 self.seen_packet_len.append(len)
-        self.data = data[self.ignore_first:-self.ignore_last]
-        self.ipt = map(lambda e: e[0], self.data)
-        self.ipt.sort()
+        self.data = defaultdict(list)
+        self.ipt = defaultdict(list)
+        for port in data.keys():
+            self.data[port] = data[port][self.ignore_first:-self.ignore_last]
+            self.ipt[port] = map(lambda e: e[0], self.data[port])
+            self.ipt[port].sort()
 
     def get_ipt(self):
         return self.ipt
 
     def summary(self):
-        avg = mean(self.ipt)
-        L = len(self.ipt)
-        pc99 = self.ipt[int(0.99 * L)]
-        return avg, pc99
+        ret = dict()
+        for port in self.ipt.keys():
+            avg = mean(self.ipt[port])
+            L = len(self.ipt[port])
+            pc99 = self.ipt[port][int(0.99 * L)]
+            ret[port] = (avg, pc99)
+        return ret
 
