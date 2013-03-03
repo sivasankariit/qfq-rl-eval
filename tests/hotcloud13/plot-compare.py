@@ -103,7 +103,11 @@ def plot_by_qty(fixed, major, minor):
             estats = EthstatsParser(ethstats_fname, iface='eth1')
             mpstats = MPStatParser(mpstat_fname)
             summ = estats.summary()
-            print d, mpstats.summary(), summ
+            print '-'*80
+            print "Parameters", d
+            print "\tcpu ", mpstats.summary()
+            print "\tnet ", summ
+            print '-'*80
             ys.append(mpstats.kernel())
 
         if len(ys) == 0:
