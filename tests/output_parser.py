@@ -7,8 +7,9 @@ IFACE = "eth2"
 ZERO = "0.00"
 
 class EthstatsParser:
-    def __init__(self, filename):
+    def __init__(self, filename, iface=IFACE):
         self.f = filename
+        self.iface = iface
         self.lines = open(filename).readlines()
         self.parse()
 
@@ -23,7 +24,7 @@ class EthstatsParser:
         util = []
         for line in self.lines:
             d = self.parse_line(line)
-            if d["iface"] == IFACE and d["out"] != ZERO:
+            if d["iface"] == self.iface and d["out"] != ZERO:
                 util.append(float(d["out"]))
         L = len(util)
         L = L/3
