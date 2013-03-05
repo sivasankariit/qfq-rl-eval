@@ -35,6 +35,11 @@ parser.add_argument('--num-runs', '-r',
                     type=int,
                     help="number of times the expt was run")
 
+parser.add_argument('--tolerance', '-t',
+                    default=0.1,
+                    type=float,
+                    help="tolerance of achieved rate in fraction")
+
 parser.add_argument('--num-class', '-n',
                     default=None,
                     type=int,
@@ -87,6 +92,9 @@ def get_rl_colour(rl):
 def get_minor_colour(minor):
     return colour_rl[minor]
 
+def err(s):
+    return T.colored(s, "red", attrs=["bold"])
+
 def plot_by_qty(ax, fixed, major, minor, fn_qty, opts={}):
     minor_bar = {}
     minors_seen = []
@@ -117,7 +125,8 @@ def plot_by_qty(ax, fixed, major, minor, fn_qty, opts={}):
             print "\tcpu ", mpstats.summary()
             print "\tnet ", summ
             print '-'*80
-            ys.append(fn_qty(mpstats, sniff))
+            yvalue = fn_qty(estats, mpstats, sniff)
+            ys.append(yvalue)
 
         if len(ys) == 0:
             continue
@@ -148,13 +157,21 @@ def plot_by_qty(ax, fixed, major, minor, fn_qty, opts={}):
         plt.show()
 
 if args.rates:
-    def plot_cpu(mpstats, sniff, rate):
+    def plot_cpu(estats, mpstats, sniff, rate):
+        achieved = estats.summary()
+        if abs(achieved['mean'] - rate) > args.tolerance * rate:
+            print err('tolerance failed: achieved %.3f, rate: %.3f' % (achieved['mean'], rate))
+            return 0
         return mpstats.kernel()
-    def plot_ipt(mpstats, sniff, rate):
+    def plot_ipt(estats, mpstats, sniff, rate):
+        achieved = estats.summary()
         m = sniff.mean_ipt()
         ideal_mean = sniff.ideal_ipt_nsec(total_rate_gbps=rate/1000.0)
-        std = sniff.stdev_ipt()
-        return std
+        std_norm = sniff.stdev_ipt() / ideal_mean
+        if abs(achieved['mean'] - rate) > args.tolerance * rate:
+            print err('tolerance failed: achieved %.3f, rate: %.3f' % (achieved['mean'], rate))
+            return 0
+        return std_norm
 
     # plot keeping rate fixed.
     fig = plt.figure()
@@ -170,9 +187,9 @@ if args.rates:
                     major={'name': 'num_class',
                            'data': num_classes,
                            'label': "number of classes"},
-                    fn_qty=lambda m,s: plot_cpu(m, s, rate),
-                    opts={'ylim': None, 'legend': False,
-                          'ylabel': "Accuracy"})
+                    fn_qty=lambda e,m,s: plot_cpu(e, m, s, rate),
+                    opts={'ylim': (0, args.maxy), 'legend': False,
+                          'ylabel': "CPU Util."})
 
         # This should be the stdev plot.
         plt_num += 1
@@ -184,7 +201,7 @@ if args.rates:
                     major={'name': 'num_class',
                            'data': num_classes,
                            'label': "number of classes"},
-                    fn_qty=lambda m,s: plot_ipt(m, s, rate),
+                    fn_qty=lambda e,m,s: plot_ipt(e, m, s, rate),
                     opts={'ylim': None, 'legend': False,
                           'ylabel': "Stdev of IPT in nsec"})
 
