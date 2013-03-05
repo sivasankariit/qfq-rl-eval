@@ -17,7 +17,7 @@ import plot_defaults
 import sys
 import itertools
 from helper import *
-from output_parser import EthstatsParser, MPStatParser
+from output_parser import EthstatsParser, MPStatParser, SnifferParser
 from site_config import config
 
 parser = argparse.ArgumentParser(description="Plot comparing overhead of none,htb,etc..")
@@ -40,10 +40,11 @@ parser.add_argument('--num-class', '-n',
                     type=int,
                     help="plot for a fixed num_classes")
 
-parser.add_argument('--rate', '-R',
-                    default=None,
+parser.add_argument('--rates',
+                    nargs="+",
                     type=int,
-                    help="plot for a fixed rate limit")
+                    default=[],
+                    help="plot for the above sweep of rate limits")
 
 parser.add_argument('--out', '-o',
                     help="save plot to file")
@@ -54,7 +55,11 @@ rspaces = re.compile(r'\s+')
 def ints(str):
     return map(int, str.split(' '))
 
-plot_defaults.rcParams['figure.figsize'] = 4, 3.5
+SUBPLOT_HEIGHT = 4
+SUBPLOT_WIDTH = 3.5
+SUBPLOT_ROWS = len(args.rates)
+SUBPLOT_COLS = 2 # CPU and stdev
+plot_defaults.rcParams['figure.figsize'] = (SUBPLOT_HEIGHT * SUBPLOT_ROWS, SUBPLOT_WIDTH * SUBPLOT_COLS)
 
 rls = config['EXPT_RL'].split(' ')
 rls_seen = []
@@ -82,7 +87,7 @@ def get_rl_colour(rl):
 def get_minor_colour(minor):
     return colour_rl[minor]
 
-def plot_by_qty(fixed, major, minor):
+def plot_by_qty(ax, fixed, major, minor, fn_qty, opts={}):
     minor_bar = {}
     minors_seen = []
     for (i,XX), (j,YY) in itertools.product(E(minor['data']), E(major['data'])):
@@ -100,56 +105,90 @@ def plot_by_qty(fixed, major, minor):
                 continue
             ethstats_fname = os.path.join(args.dir, dir, "net.txt")
             mpstat_fname = os.path.join(args.dir, dir, "mpstat.txt")
+            sniff_fname = os.path.join(args.dir, dir, "pkt_snf.txt")
+
             estats = EthstatsParser(ethstats_fname, iface='eth1')
             mpstats = MPStatParser(mpstat_fname)
+            sniff = SnifferParser(sniff_fname)
+
             summ = estats.summary()
             print '-'*80
             print "Parameters", d
             print "\tcpu ", mpstats.summary()
             print "\tnet ", summ
             print '-'*80
-            ys.append(mpstats.kernel())
+            ys.append(fn_qty(mpstats, sniff))
 
         if len(ys) == 0:
             continue
 
         x = j * (len(minor['data']) + 1) + i
-        bar = plt.bar(x, mean(ys), width=1, color=get_minor_colour(XX),
-                      yerr=stdev(ys), ecolor='red')
+        bar = ax.bar(x, mean(ys), width=1, color=get_minor_colour(XX),
+                     yerr=stdev(ys), ecolor='red')
         minor_bar[XX] = bar[0]
         if XX not in minors_seen:
             minors_seen.append(XX)
 
-    plt.legend([minor_bar[XX] for XX in minors_seen],
-               minors_seen,
-               loc="upper right")
+    if opts.get('legend'):
+        ax.legend([minor_bar[XX] for XX in minors_seen],
+                  minors_seen,
+                  loc="upper right")
     width = len(minor['data']) + 1
-    xtickloc = width * numpy.arange(len(major['data'])) + (width / 2)
-    plt.xticks(xtickloc, major['data'])
-    plt.ylim((0, args.maxy))
-    plt.ylabel("CPU usage %")
-    plt.xlabel(major['label'])
+    xtickloc = width * numpy.arange(len(major['data'])) + ((width - 1.0) / 2)
+    # This is a pain with matplotlib; the ax and plt apis are slightly
+    # different.  plt.xticks(xtickloc, xticklabels) will work, but it
+    # has to be split as follows for axis.
+    ax.set_xticks(xtickloc)
+    ax.set_xticklabels(major['data'])
+    ax.set_ylim(opts.get('ylim'))
+    ax.set_ylabel(opts.get('ylabel'))
+    ax.set_xlabel(major['label'])
 
     if args.out:
         plt.savefig(args.out)
         print "saved to", args.out
-    else:
+    elif opts.get('show'):
         plt.show()
 
+if args.rates:
+    def plot_cpu(mpstats, sniff, rate):
+        return mpstats.kernel()
+    def plot_ipt(mpstats, sniff, rate):
+        m = sniff.mean_ipt()
+        ideal_mean = sniff.ideal_ipt_nsec(total_rate_gbps=rate/1000.0)
+        std = sniff.stdev_ipt()
+        return std
 
-if args.num_class:
-    # plot keeping num_class fixed.
-    plot_by_qty({'num_class': args.num_class},
-                minor={'name': 'rl',
-                       'data': rls},
-                major={'name': 'rate',
-                       'data': rates,
-                       'label': "rates"})
-elif args.rate:
     # plot keeping rate fixed.
-    plot_by_qty({'rate': args.rate},
-                minor={'name': 'rl',
-                       'data': rls},
-                major={'name': 'num_class',
-                       'data': num_classes,
-                       'label': "number of classes"})
+    fig = plt.figure()
+    plt_num = 0
+    for rate in args.rates:
+        assert(rate in rates)
+        plt_num += 1
+        ax = fig.add_subplot(SUBPLOT_ROWS, SUBPLOT_COLS, plt_num)
+        plot_by_qty(ax,
+                    {'rate': rate},
+                    minor={'name': 'rl',
+                           'data': rls},
+                    major={'name': 'num_class',
+                           'data': num_classes,
+                           'label': "number of classes"},
+                    fn_qty=lambda m,s: plot_cpu(m, s, rate),
+                    opts={'ylim': None, 'legend': False,
+                          'ylabel': "Accuracy"})
+
+        # This should be the stdev plot.
+        plt_num += 1
+        ax = fig.add_subplot(SUBPLOT_ROWS, SUBPLOT_COLS, plt_num)
+        plot_by_qty(ax,
+                    {'rate': rate},
+                    minor={'name': 'rl',
+                           'data': rls},
+                    major={'name': 'num_class',
+                           'data': num_classes,
+                           'label': "number of classes"},
+                    fn_qty=lambda m,s: plot_ipt(m, s, rate),
+                    opts={'ylim': None, 'legend': False,
+                          'ylabel': "Stdev of IPT in nsec"})
+
+    plt.show()
