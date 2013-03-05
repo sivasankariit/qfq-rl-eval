@@ -167,7 +167,9 @@ if args.rates:
         achieved = estats.summary()
         m = sniff.mean_ipt()
         ideal_mean = sniff.ideal_ipt_nsec(total_rate_gbps=rate/1000.0)
-        std_norm = sniff.stdev_ipt() / ideal_mean
+        std_norm = sniff.stdev_ipt()
+        if ideal_mean > 0:
+            std_norm /= ideal_mean
         if abs(achieved['mean'] - rate) > args.tolerance * rate:
             print err('tolerance failed: achieved %.3f, rate: %.3f' % (achieved['mean'], rate))
             return 0
@@ -205,6 +207,7 @@ if args.rates:
                     opts={'ylim': None, 'legend': False,
                           'ylabel': "Stdev of IPT in nsec"})
 
+    plt.tight_layout()
     if args.out:
         plt.savefig(args.out)
     else:
