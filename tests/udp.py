@@ -125,8 +125,8 @@ if args.num_class < args.num_senders:
     args.num_senders = args.num_class
     print "Number of classes is less than number of sender programs."
     print "So, I am setting #programs = #classes"
-if args.num_class == 1 and args.rate > 8000:
-    print "With Intel NIC, 1 sender program cannot push more than 8Gbps."
+if args.num_class == 1 and args.rate > 5000:
+    print "With Intel NIC, 1 sender program cannot push more than 5Gbps with 1500 byte packets."
     print "Using 2 sender programs and 2 classes instead"
     args.num_senders = 2
     args.num_class = 2
@@ -221,7 +221,7 @@ class UDP(Expt):
 
         self.client.start_n_udp(num_class, num_senders,
                                 socket.gethostbyname(server), startport,
-                                rate, burst=4096, dir=e(''), pin=self.opts("pin"),
+                                rate, burst=1472, dir=e(''), pin=self.opts("pin"),
                                 totalrate = self.opts("rate"))
         return
 
