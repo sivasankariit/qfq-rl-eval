@@ -205,7 +205,7 @@ if args.rates:
                            'label': "number of classes"},
                     fn_qty=lambda e,m,s: plot_ipt(e, m, s, rate),
                     opts={'ylim': None, 'legend': False,
-                          'ylabel': "Stdev of IPT in nsec"})
+                          'ylabel': "Relative stdev"})
 
     plt.tight_layout()
     if args.out:
