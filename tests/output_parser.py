@@ -83,11 +83,16 @@ class SnifferParser:
         self.max_lines = max_lines
         self.ignore_frac = ignore_frac
         self.seen_packet_len = []
+        self.ipt = defaultdict(list)
 
-        self.lines = open(filename).xreadlines()
-        # Ignore first line
-        self.lines.next()
-        self.parse()
+        try:
+            self.lines = open(filename).xreadlines()
+            # Ignore first line
+            self.lines.next()
+            self.parse()
+        except IOError:
+            # File is probably not present
+            return
 
     def parse_line(self, line):
         nsec, _, _, packet_len, port = line.strip().split(' ')
@@ -156,5 +161,10 @@ class SnifferParser:
 
     def ideal_ipt_nsec(self, total_rate_gbps):
         FRAMING_OVERHEAD = 24
-        class_rate_gbps = total_rate_gbps / len(self.ipt.keys())
-        return (self.seen_packet_len[0] + FRAMING_OVERHEAD) * 8.0 / (class_rate_gbps)
+        try:
+            class_rate_gbps = total_rate_gbps / len(self.ipt.keys())
+            return (self.seen_packet_len[0] + FRAMING_OVERHEAD) * 8.0 / (class_rate_gbps)
+        except:
+            # Probably the file was not present.  Ignore any errors silently.
+            return 0
+
