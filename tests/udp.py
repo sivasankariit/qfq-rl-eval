@@ -121,15 +121,21 @@ elif args.rl == "hwrl":
         print "Hardware rate limiting only available on Intel NICs"
         sys.exit(-1)
     print "Using Intel hardware rate limiting"
-if args.num_class < args.num_senders:
-    args.num_senders = args.num_class
-    print "Number of classes is less than number of sender programs."
-    print "So, I am setting #programs = #classes"
+if (args.rl == "none" or args.rl == "hwrl"):
+    if (args.num_class < 2 * args.num_senders):
+        args.num_senders = args.num_class / 2
+        print "RL = %s and number of classes < 2*number of sender programs." % args.rl
+        print "So, I am setting #programs = #classes / 2"
+else:
+    if args.num_class < args.num_senders:
+        args.num_senders = args.num_class
+        print "Number of classes is less than number of sender programs."
+        print "So, I am setting #programs = #classes"
 if args.num_class == 1 and args.rate > 5000:
     print "With Intel NIC, 1 sender program cannot push more than 5Gbps with 1500 byte packets."
-    print "Using 2 sender programs and 2 classes instead"
+    print "Using 2 sender programs and 4 classes instead"
     args.num_senders = 2
-    args.num_class = 2
+    args.num_class = 4
 
 def e(s, tmpdir="/tmp"):
     return "%s/%s/%s" % (tmpdir, args.exptid, s)
