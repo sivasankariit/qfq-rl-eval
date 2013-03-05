@@ -137,3 +137,24 @@ class SnifferParser:
             ret[port] = (avg, pc99)
         return ret
 
+    def mean_ipt(self):
+        """Returns average of the average ipt per class."""
+        means = []
+        for port in self.ipt.keys():
+            avg = mean(self.ipt[port])
+            means.append(avg)
+        return mean(means)
+
+    def stdev_ipt(self, wrt=None):
+        """Returns avg of the stdev of ipt per class with respect to
+        mean @wrt."""
+        stdevs = []
+        for port in self.ipt.keys():
+            std = stdev(self.ipt[port], wrt)
+            stdevs.append(std)
+        return mean(stdevs)
+
+    def ideal_ipt_nsec(self, total_rate_gbps):
+        FRAMING_OVERHEAD = 24
+        class_rate_gbps = total_rate_gbps / len(self.ipt.keys())
+        return (self.seen_packet_len[0] + FRAMING_OVERHEAD) * 8.0 / (class_rate_gbps)
