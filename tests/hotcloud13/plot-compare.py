@@ -144,10 +144,7 @@ def plot_by_qty(ax, fixed, major, minor, fn_qty, opts={}):
     ax.set_ylabel(opts.get('ylabel'))
     ax.set_xlabel(major['label'])
 
-    if args.out:
-        plt.savefig(args.out)
-        print "saved to", args.out
-    elif opts.get('show'):
+    if opts.get('show'):
         plt.show()
 
 if args.rates:
@@ -191,4 +188,7 @@ if args.rates:
                     opts={'ylim': None, 'legend': False,
                           'ylabel': "Stdev of IPT in nsec"})
 
-    plt.show()
+    if args.out:
+        plt.savefig(args.out)
+    else:
+        plt.show()
