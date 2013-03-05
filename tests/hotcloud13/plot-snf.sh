@@ -14,7 +14,10 @@ EXPT_RUN=`python site_config.py --var EXPT_RUN`
 PLOT_TMPDIR=`python site_config.py --var PLOT_TMPDIR`
 
 mkdir -p $PLOT_TMPDIR
-TMPDIR=`mktemp -d --tmpdir=$PLOT_TMPDIR`
+# mktemp on OSX doesn't like the arguments. :)
+TMPDIR=$dir/tmp
+mkdir -p $TMPDIR
+
 echo TMPDIR=$TMPDIR
 for rate in $EXPT_RATES; do
 for rl in $EXPT_RL; do
@@ -25,12 +28,13 @@ for run in $EXPT_RUN; do
     echo "    Extracting tar files"
     tar xf $dir/$exptid.tar.gz -C $TMPDIR
     tar xf $dir/$exptid-snf.tar.gz -C $TMPDIR
+    mkdir -p $PLOT_TMPDIR/$exptid
     echo "    Plotting"
     python hotcloud13/plot-sniffer.py -f $TMPDIR/$exptid/pkt_snf.txt \
         -r `echo $[$rate / 1000]` \
         -n $nclasses \
         --max 1000000 \
-        -o $dir/$exptid/pkt_arr.pdf > $dir/$exptid/plot-sniffer-output.txt
+        -o $PLOT_TMPDIR/$exptid/pkt_arr.pdf > $TMPDIR/$exptid/plot-sniffer-output.txt
     echo "    Removing untar'd sniffer file"
     rm $TMPDIR/$exptid/pkt_snf.txt
 done;
