@@ -26,7 +26,7 @@ parser.add_argument('--dir',
                     help="expt output dir")
 
 parser.add_argument('--maxy',
-                    default=20,
+                    default=40,
                     type=int,
                     help="max y-axis")
 
@@ -139,9 +139,10 @@ def plot_by_qty(ax, fixed, major, minor, fn_qty, opts={}):
             minors_seen.append(XX)
 
     if opts.get('legend'):
-        ax.legend([minor_bar[XX] for XX in minors_seen],
-                  minors_seen,
-                  loc="upper right")
+        lg = ax.legend([minor_bar[XX] for XX in minors_seen],
+                       [rl_name[XX] for XX in minors_seen],
+                       loc="upper right")
+        lg.draw_frame(False)
     width = len(minor['data']) + 1
     xtickloc = width * numpy.arange(len(major['data'])) + ((width - 1.0) / 2)
     # This is a pain with matplotlib; the ax and plt apis are slightly
@@ -153,6 +154,13 @@ def plot_by_qty(ax, fixed, major, minor, fn_qty, opts={}):
     ax.set_ylabel(opts.get('ylabel'))
     ax.set_xlabel(major['label'])
 
+    if opts.get('annotate'):
+        ax.text(0.5, 0.9,
+                opts.get('annotate'),
+                horizontalalignment='center',
+                verticalalignment='center',
+                transform=ax.transAxes)
+
     if opts.get('show'):
         plt.show()
 
@@ -160,6 +168,8 @@ if args.rates:
     def plot_cpu(estats, mpstats, sniff, rate):
         achieved = estats.summary()
         if abs(achieved['mean'] - rate) > args.tolerance * rate:
+            if achieved['mean'] > rate:
+                print T.colored("higher rate", "green", attrs=["bold"])
             print err('tolerance failed: achieved %.3f, rate: %.3f' % (achieved['mean'], rate))
             return 0
         return mpstats.kernel()
@@ -191,7 +201,8 @@ if args.rates:
                            'label': "number of classes"},
                     fn_qty=lambda e,m,s: plot_cpu(e, m, s, rate),
                     opts={'ylim': (0, args.maxy), 'legend': False,
-                          'ylabel': "CPU Util."})
+                          'annotate': "Rate: %d Gb/s" % (rate/1000),
+                          'ylabel': "Kernel CPU Util."})
 
         # This should be the stdev plot.
         plt_num += 1
@@ -204,7 +215,7 @@ if args.rates:
                            'data': num_classes,
                            'label': "number of classes"},
                     fn_qty=lambda e,m,s: plot_ipt(e, m, s, rate),
-                    opts={'ylim': None, 'legend': False,
+                    opts={'ylim': (0, 0.4), 'legend': (plt_num == 2),
                           'ylabel': "Relative stdev"})
 
     plt.tight_layout()
