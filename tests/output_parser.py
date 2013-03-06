@@ -27,8 +27,7 @@ class EthstatsParser:
             if d["iface"] == self.iface and d["out"] != ZERO:
                 util.append(float(d["out"]))
         L = len(util)
-        L = L/3
-        util = util[L/10:-L/10]
+        util = util[15:]
         self.util = util
         return util
 
