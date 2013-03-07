@@ -135,6 +135,8 @@ class SnifferParser:
     def summary(self):
         ret = dict()
         for port in self.ipt.keys():
+	    if port == 0:
+	        continue
             avg = mean(self.ipt[port])
             L = len(self.ipt[port])
             pc99 = self.ipt[port][int(0.99 * L)]
