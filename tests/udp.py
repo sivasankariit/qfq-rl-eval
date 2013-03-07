@@ -171,6 +171,7 @@ class UDP(Expt):
         self.hlist.remove_qdiscs()
         if config["NIC_VENDOR"] == "Intel":
             self.client.clear_hw_rate_limits(numqueues=config['NIC_HW_QUEUES'])
+            sleep(4)
         #self.hlist.insmod_qfq()
 
         if self.opts("rl") == "htb":
@@ -195,6 +196,8 @@ class UDP(Expt):
                 # First queue will account for remainder in rate limit
                 delta = 1 if (q < self.opts("rate") % num_hw_rl) else 0
                 self.client.add_hw_rate_limit(rate=hw_rate + delta, queue=q)
+                sleep(0.5)
+            sleep(2)
 
         self.client.start_cpu_monitor(e(''))
         self.client.start_bw_monitor(e(''))

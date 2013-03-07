@@ -241,6 +241,7 @@ class Host(object):
         c  = "maxqueue=`echo $[%d - 1]`; " % numqueues
         c += "for queue in `seq 0 $maxqueue`; do "
         c += "  echo 0 | sudo tee /sys/class/net/%s/queues/tx-$queue/tx_rate_limit > /dev/null; " % iface
+        c += "  sleep 0.5;"
         c += "done;"
         self.cmd(c)
 
