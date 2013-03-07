@@ -26,7 +26,7 @@ parser.add_argument('--dir',
                     help="expt output dir")
 
 parser.add_argument('--maxy',
-                    default=40,
+                    default=25,
                     type=int,
                     help="max y-axis")
 
@@ -134,6 +134,8 @@ def plot_by_qty(ax, fixed, major, minor, fn_qty, opts={}):
         x = j * (len(minor['data']) + 1) + i
         bar = ax.bar(x, mean(ys), width=1, color=get_minor_colour(XX),
                      yerr=stdev(ys), ecolor='red')
+        if XX == 'hwrl' and YY > 16:
+            bar[0].set_hatch('//')
         minor_bar[XX] = bar[0]
         if XX not in minors_seen:
             minors_seen.append(XX)
@@ -150,12 +152,16 @@ def plot_by_qty(ax, fixed, major, minor, fn_qty, opts={}):
     # has to be split as follows for axis.
     ax.set_xticks(xtickloc)
     ax.set_xticklabels(major['data'])
+
+    if opts.get('yticklabels'):
+        ax.set_yticklabels(opts.get('yticklabels'))
+
     ax.set_ylim(opts.get('ylim'))
     ax.set_ylabel(opts.get('ylabel'))
     ax.set_xlabel(major['label'])
 
     if opts.get('annotate'):
-        ax.text(0.5, 0.9,
+        ax.text(0.12, 0.9,
                 opts.get('annotate'),
                 horizontalalignment='center',
                 verticalalignment='center',
@@ -202,6 +208,7 @@ if args.rates:
                     fn_qty=lambda e,m,s: plot_cpu(e, m, s, rate),
                     opts={'ylim': (0, args.maxy), 'legend': False,
                           'annotate': "Rate: %d Gb/s" % (rate/1000),
+                          'yticklabels': ['', '5', '', '15', '', '25'],
                           'ylabel': "Kernel CPU Util. (%)"})
 
         # This should be the stdev plot.
@@ -215,7 +222,9 @@ if args.rates:
                            'data': num_classes,
                            'label': "number of classes"},
                     fn_qty=lambda e,m,s: plot_ipt(e, m, s, rate),
-                    opts={'ylim': (0, 0.3), 'legend': (plt_num == 2),
+                    opts={'ylim': (0, 0.25), 'legend': (plt_num == 2),
+                          'annotate': "Rate: %d Gb/s" % (rate/1000),
+                          'yticklabels': ['', '0.05', '', '0.15', '', '0.25'],
                           'ylabel': "Normalized stdev"})
 
     plt.tight_layout()
