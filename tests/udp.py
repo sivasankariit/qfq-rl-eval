@@ -121,7 +121,7 @@ elif args.rl == "hwrl":
         print "Hardware rate limiting only available on Intel NICs"
         sys.exit(-1)
     print "Using Intel hardware rate limiting"
-if (args.rl == "none" or args.rl == "hwrl"):
+if (args.rl == "none" or args.rl == "hwrl" or args.rl == "htb"):
     if (args.num_class < 2 * args.num_senders):
         args.num_senders = args.num_class / 2
         print "RL = %s and number of classes < 2*number of sender programs." % args.rl
