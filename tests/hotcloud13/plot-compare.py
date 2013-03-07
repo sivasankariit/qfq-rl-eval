@@ -26,7 +26,7 @@ parser.add_argument('--dir',
                     help="expt output dir")
 
 parser.add_argument('--maxy',
-                    default=25,
+                    default=30,
                     type=int,
                     help="max y-axis")
 
@@ -213,12 +213,15 @@ if args.rates:
                     fn_qty=lambda e,m,s: plot_cpu(e, m, s, rate),
                     opts={'ylim': (0, args.maxy), 'legend': False,
                           'annotate': "Rate: %d Gb/s" % (rate/1000),
-                          'yticklabels': ['', '5', '', '15', '', '25'],
+                          'yticklabels': ['0', '', '10', '', '20', '', '30'],
                           'ylabel': "Kernel CPU Util. (%)"})
 
         # This should be the stdev plot.
         plt_num += 1
         ax = fig.add_subplot(SUBPLOT_ROWS, SUBPLOT_COLS, plt_num)
+        # Set yticks explicitly otherwise matplotlib does not seem to assign
+        # tick for such a floating point ylim
+        ax.set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3])
         plot_by_qty(ax,
                     {'rate': rate},
                     minor={'name': 'rl',
@@ -227,10 +230,10 @@ if args.rates:
                            'data': num_classes,
                            'label': "number of classes"},
                     fn_qty=lambda e,m,s: plot_ipt(e, m, s, rate),
-                    opts={'ylim': (0, 0.25), 'legend': (plt_num == 2),
+                    opts={'ylim': (0, 0.3), 'legend': (plt_num == 2),
                           'annotate': "Rate: %d Gb/s" % (rate/1000),
-                          'yticklabels': ['', '0.05', '', '0.15', '', '0.25'],
-                          'ylabel': "Normalized stdev"})
+                          'yticklabels': ['0', '', '0.1', '', '0.2', '', '0.3'],
+                          'ylabel': "Normalized stddev"})
 
     plt.tight_layout()
     if args.out:
