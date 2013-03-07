@@ -117,7 +117,7 @@ def plot_by_qty(ax, fixed, major, minor, fn_qty, opts={}):
 
             estats = EthstatsParser(ethstats_fname, iface='eth1')
             mpstats = MPStatParser(mpstat_fname)
-            sniff = SnifferParser(sniff_fname)
+            sniff = SnifferParser(sniff_fname, max_lines=1000000)
 
             summ = estats.summary()
             print '-'*80
@@ -202,7 +202,7 @@ if args.rates:
                     fn_qty=lambda e,m,s: plot_cpu(e, m, s, rate),
                     opts={'ylim': (0, args.maxy), 'legend': False,
                           'annotate': "Rate: %d Gb/s" % (rate/1000),
-                          'ylabel': "Kernel CPU Util."})
+                          'ylabel': "Kernel CPU Util. (%)"})
 
         # This should be the stdev plot.
         plt_num += 1
@@ -215,8 +215,8 @@ if args.rates:
                            'data': num_classes,
                            'label': "number of classes"},
                     fn_qty=lambda e,m,s: plot_ipt(e, m, s, rate),
-                    opts={'ylim': (0, 0.4), 'legend': (plt_num == 2),
-                          'ylabel': "Relative stdev"})
+                    opts={'ylim': (0, 0.3), 'legend': (plt_num == 2),
+                          'ylabel': "Normalized stdev"})
 
     plt.tight_layout()
     if args.out:
