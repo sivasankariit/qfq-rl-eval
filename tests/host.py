@@ -216,7 +216,7 @@ class Host(object):
         dev = self.get_10g_dev()
         c  = "for klass in `seq %s %s`; do " % (start_port, start_port + num_class)
         c += "  hexclass=`perl -e \"printf('%%x', $klass %% %s)\"`; " % (num_hash)
-        c += "  sudo tc filter add dev %s protocol all parent 1: prio 1 u32 ht 2:$hexclass: match ip dport $klass %s flowid 1:%s; " % (dev, self.hash_mask, "$klass")
+        c += "  sudo tc filter add dev %s protocol all parent 1: prio 1 u32 ht 2:$hexclass: match ip dport $klass %s flowid 1:%s; " % (dev, "0xffff", "$klass")
         c += "  sudo tc class add dev %s classid 1:%s parent 1: htb rate %s ceil %s; " % (dev, "$klass", rate, ceil)
         c += "done;"
         self.cmd(c)
