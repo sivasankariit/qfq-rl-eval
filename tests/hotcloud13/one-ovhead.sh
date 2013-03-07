@@ -16,19 +16,19 @@ trap finish SIGINT
 python ../utils/set-affinity.py $dev
 
 mkdir -p $dir
-for rate in 5000 7000; do
-for nrls in 1; do
-for rl in none htb; do
-    exptid=rl-$rl-nrls-$nrls-rate-$rate-run-1
-    rate_per_rl=$(($rate/$nrls))
+for rate in 9000; do
+for nclass in 16; do
+for rl in htb; do
+    exptid=rl-$rl-ncl-$ncl-rate-$rate-run-1
+    rate_per_rl=$(($rate/$nclass))
     python udp.py --nrr 0 \
         --exptid $exptid \
         -t $time \
         --rl $rl \
-        --rate $rate_per_rl \
-        --nrls $nrls \
+        --rate $rate \
 	--mtu $mtu \
-	--ns $nrls # Same num of senders as rate limiters
+	--ns 8 \
+	--num-class $nclass
 
     mv $exptid.tar.gz $dir/
 
