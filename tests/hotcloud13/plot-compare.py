@@ -68,8 +68,12 @@ plot_defaults.rcParams['figure.figsize'] = (SUBPLOT_HEIGHT * SUBPLOT_ROWS, SUBPL
 
 rls = config['EXPT_RL'].split(' ')
 rls_seen = []
+
 rl_name = dict(none="app", htb="htb",eyeq="eyeq", hwrl="hwrl")
+rl_name['hwrl+'] = 'hwrl+'
+
 colour_rl = dict(none="yellow", htb="green", tbf="blue", eyeq="grey", hwrl="cyan")
+colour_rl['hwrl+'] = "cyan"
 
 rates = ints(config["EXPT_RATES"])
 
@@ -136,6 +140,7 @@ def plot_by_qty(ax, fixed, major, minor, fn_qty, opts={}):
                      yerr=stdev(ys), ecolor='red')
         if XX == 'hwrl' and YY > 16:
             bar[0].set_hatch('//')
+            XX = XX + "+"
         minor_bar[XX] = bar[0]
         if XX not in minors_seen:
             minors_seen.append(XX)
