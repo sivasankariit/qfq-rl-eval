@@ -516,3 +516,16 @@ class Host(object):
             return socket.gethostbyaddr(self.addr)[0]
         except:
             return self.addr
+
+    def start_profile(self, dir="/tmp"):
+        dir = os.path.join(os.path.abspath(dir), "profile")
+        c = "mkdir -p %s; export SESSION_DIR=%s;" % (dir, dir)
+        c += "opcontrol --reset; opcontrol --start-daemon; opcontrol --start;"
+        self.cmd(c)
+
+    def stop_profile(self, dir="/tmp"):
+        dir = os.path.join(os.path.abspath(dir), "profile")
+        c = "export SESSION_DIR=%s; opcontrol --stop; opcontrol --dump;" % dir
+        c += "opcontrol --save profile;"
+        c += "opcontrol --deinit; killall -9 oprofiled; opcontrol --deinit;"
+        self.cmd(c)
