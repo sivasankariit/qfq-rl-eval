@@ -132,14 +132,15 @@ def plot_by_qty(ax, fixed, major, minor, fn_qty, opts={}):
             yvalue = fn_qty(estats, mpstats, sniff)
             ys.append(yvalue)
 
-        if len(ys) == 0:
+        if len(ys) == 0 or mean(ys) == 0:
             continue
 
         x = j * (len(minor['data']) + 1) + i
         bar = ax.bar(x, mean(ys), width=1, color=get_minor_colour(XX),
                      yerr=stdev(ys), ecolor='red')
         if XX == 'hwrl' and YY > 16:
-            bar[0].set_hatch('//')
+            bar[0].set_hatch('x')
+            bar[0].set_facecolor('white')
             XX = XX + "+"
         minor_bar[XX] = bar[0]
         if XX not in minors_seen:
