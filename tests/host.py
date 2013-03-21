@@ -228,7 +228,7 @@ class Host(object):
         c  = "sudo tc -s filter show dev %s > %s/htb-filter.txt" % (dev, dir)
         self.cmd(c)
 
-    def add_hw_rate_limit(self, rate='5000', queue=2):
+    def add_intel_hw_rate_limit(self, rate='5000', queue=2):
         # rate in Mbps
         iface = self.get_10g_dev()
         c  = "echo %s | sudo tee " % rate
@@ -236,7 +236,7 @@ class Host(object):
         c += "/dev/null"
         self.cmd(c)
 
-    def clear_hw_rate_limits(self, numqueues=16):
+    def clear_intel_hw_rate_limits(self, numqueues=16):
         iface = self.get_10g_dev()
         c  = "maxqueue=`echo $[%d - 1]`; " % numqueues
         c += "for queue in `seq 0 $maxqueue`; do "
@@ -244,6 +244,32 @@ class Host(object):
         c += "  sleep 0.5;"
         c += "done;"
         self.cmd(c)
+
+    def add_mellanox_hw_rate_limit(self, rates=[0,0,0,0,0,0,0,0]):
+        # sk_prio 0-7 mapped to TC 0-7 respectively
+        # sk_prio 8-15 all mapped to TC 7
+        # rate in Mbps for each of the 8 classes.
+        # rate = 0 => unlimited
+        iface = self.get_10g_dev()
+        c = "sudo python %s -i %s -u 0,1,2,3,4,5,6,7,7,7,7,7,7,7,7,7; "
+        c = c % (config['TC_WRAP'], iface)
+        c += "%s -i %s -p 0,1,2,3,4,5,6,7 -r %s;"
+        c = c % (config['MLNX_QOS'], iface, ','.join(str(x) for x in rates))
+        self.cmd(c)
+
+    def clear_mellanox_hw_rate_limits(self):
+        # Qdiscs should be removed first to configure the mappings
+        # Map all sk_priorities to UP 0
+        # Map all UPs to TC 0
+        # Remove rate limits for all TCs
+        self.remove_qdiscs()
+        iface = self.get_10g_dev()
+        c = "sudo python %s -i %s -u 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0; "
+        c = c % (config['TC_WRAP'], iface)
+        c += "%s -i %s -p 0,0,0,0,0,0,0,0 -r 0,0,0,0,0,0,0,0;"
+        c = c % (config['MLNX_QOS'], iface)
+        self.cmd(c)
+        self.remove_qdiscs()
 
     def set_mtu(self, mtu=1500):
         iface = self.get_10g_dev()

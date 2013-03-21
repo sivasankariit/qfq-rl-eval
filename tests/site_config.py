@@ -79,7 +79,7 @@ elif SITE == 'Siva':
 
     config['RL_MODULE_NAME'] = ''
     config['RL_MODULE'] = ''
-    config['DEFAULT_DEV'] = 'eth1'
+    config['DEFAULT_DEV'] = 'eth2'
     config['NETPERF_DIR'] = '/home/ssradhak/src/software/netperf/bin'
     config['SHELL_PROMPT'] = '$'
     config['UDP'] = '/home/ssradhak/src/rate_limiting/qfq-rl-eval/utils/udp'
@@ -88,15 +88,19 @@ elif SITE == 'Siva':
     config['CLASS_RATE'] = '/home/ssradhak/src/rate_limiting/qfq-rl-eval/utils/class-rate.py'
 
     # Server/client nodes
-    config['DEFAULT_HOSTS'] = ['192.168.2.80', '192.168.2.64']
+    config['DEFAULT_HOSTS'] = ['192.168.4.2', '192.168.4.1']
 
     # NIC details
-    config['NIC_VENDOR'] = 'Intel'
-    config['NIC_HW_QUEUES'] = 16
+    config['NIC_VENDOR'] = 'Mellanox'
+    config['NIC_HW_QUEUES'] = 8
+
+    # Mellanox NIC QOS scripts
+    config['TC_WRAP'] = '/home/ssradhak/src/rate_limiting/mellanox/QoS_upstream/tc_wrap.py'
+    config['MLNX_QOS'] = '/home/ssradhak/src/rate_limiting/mellanox/QoS_upstream/mlnx_qos'
 
     # Taskset CPU for single UDP program
     config['UDP_CPU'] = 2
-    config['NUM_CPUS'] = 16
+    config['NUM_CPUS'] = 8
     config['EXCLUDE_CPUS'] = []
 
     '''
@@ -115,11 +119,11 @@ elif SITE == 'Siva':
     config['INTR_MAPPING'] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 
     # Sniffer host with Myri10G sniffer
-    config['SNIFFER_HOST'] = 'dcswitch77'
+    config['SNIFFER_HOST'] = ''
     config['SNIFFER'] = '/home/ssradhak/src/rate_limiting/sniffer/tcpdump_tool/snf_simple_tcpdump'
     config['SNIFFER_TMPDIR'] = '/home/ssradhak/tmp/sniffer/'
     config['SNIFFER_CPU'] = 2
-    config['SNIFFER_DELAY'] = 15 # Seconds to delay sniffer initially
+    config['SNIFFER_DELAY'] = 25 # Seconds to delay sniffer initially
     config['SNIFFER_DURATION'] = 10 # Seconds to sniff traffic
 
     # Experiment script configuration

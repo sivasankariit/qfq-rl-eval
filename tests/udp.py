@@ -117,10 +117,10 @@ if args.rl == "none":
     print "Using userspace rate limiting"
     args.user = True
 elif args.rl == "hwrl":
-    if not config["NIC_VENDOR"] == "Intel":
-        print "Hardware rate limiting only available on Intel NICs"
+    if not config['NIC_VENDOR'] == "Intel" and not config['NIC_VENDOR'] == "Mellanox":
+        print "Hardware rate limiting only available on Intel and Mellanox NICs"
         sys.exit(-1)
-    print "Using Intel hardware rate limiting"
+    print "Using %s hardware rate limiting" % config['NIC_VENDOR']
 if (args.rl == "none" or args.rl == "hwrl" or args.rl == "htb"):
     if (args.num_class < 2 * args.num_senders):
         args.num_senders = args.num_class / 2
@@ -169,8 +169,11 @@ class UDP(Expt):
         self.hlist.rmmod()
         self.hlist.killall("udp")
         self.hlist.remove_qdiscs()
-        if config["NIC_VENDOR"] == "Intel":
-            self.client.clear_hw_rate_limits(numqueues=config['NIC_HW_QUEUES'])
+        if config['NIC_VENDOR'] == "Intel":
+            self.client.clear_intel_hw_rate_limits(numqueues=config['NIC_HW_QUEUES'])
+            sleep(4)
+        elif config['NIC_VENDOR'] == "Mellanox":
+            self.client.clear_mellanox_hw_rate_limits()
             sleep(4)
         #self.hlist.insmod_qfq()
 
@@ -192,12 +195,19 @@ class UDP(Expt):
         elif self.opts("rl") == "hwrl":
             num_hw_rl = min(config['NIC_HW_QUEUES'], self.opts("num_senders"))
             hw_rate = self.opts("rate") / num_hw_rl
-            for q in xrange(0, num_hw_rl):
-                # First queue will account for remainder in rate limit
-                delta = 1 if (q < self.opts("rate") % num_hw_rl) else 0
-                self.client.add_hw_rate_limit(rate=hw_rate + delta, queue=q)
-                sleep(0.5)
-            sleep(2)
+            if config['NIC_VENDOR'] == "Intel":
+                for q in xrange(0, num_hw_rl):
+                    # First queue will account for remainder in rate limit
+                    delta = 1 if (q < self.opts("rate") % num_hw_rl) else 0
+                    self.client.add_intel_hw_rate_limit(rate=hw_rate + delta, queue=q)
+                    sleep(0.5)
+                sleep(2)
+            elif config['NIC_VENDOR'] == "Mellanox":
+                rates = [hw_rate for x in range(0,num_hw_rl)]
+                if num_hw_rl < 8:
+                    rates.extend([0 for x in range(num_hw_rl, 8)])
+                self.client.add_mellanox_hw_rate_limit(rates)
+                sleep(2)
 
         self.client.start_cpu_monitor(e(''))
         self.client.start_bw_monitor(e(''))
