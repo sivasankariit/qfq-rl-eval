@@ -387,12 +387,13 @@ class Host(object):
 
         while nprogs:
             nprogs -= 1
+            prio = nprogs  # Set socket priority to the program number
             outfile = '%s/udp-%d.txt' % (dir, nprogs)
             if dir is None:
                 outfile = '/dev/null'
 
-            cmd = "%s %s %s %s %s %s > %s 2>&1"
-            cmd = cmd % (config["UDP"], dest, startport, nclass_per_prog, rate, burst, outfile)
+            cmd = "%s %s %s %s %s %s %s > %s 2>&1"
+            cmd = cmd % (config["UDP"], dest, startport, nclass_per_prog, rate, burst, prio, outfile)
             startport += nclass_per_prog
 
             if pin:

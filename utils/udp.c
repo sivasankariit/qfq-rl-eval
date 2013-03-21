@@ -136,20 +136,19 @@ int main(int argc, char**argv)
 	struct sockaddr_in cliaddr;
 	FILE *fp; int fd;
 	off_t offset = 0;
+	int prio;
 
-	if (argc < 5)
+	if (argc != 7)
 	{
-		printf("usage: %s IP start-port num-ports rate_mbps [burst-size]\n", argv[0]);
+		printf("usage: %s IP start-port num-ports rate_mbps burst-size prio\n", argv[0]);
 		exit(1);
 	}
 
 	startport = atoi(argv[2]);
 	n = atoi(argv[3]);
 	rate_mbps = atoi(argv[4]);
-
-	if (argc > 5) {
-		BURST_BYTES = atoi(argv[5]);
-	}
+	BURST_BYTES = atoi(argv[5]);
+	prio = atoi(argv[6]);
 
 	/* First set resource limits */
 	set_num_file_limit(n);
@@ -191,6 +190,11 @@ int main(int argc, char**argv)
 		//set_non_blocking(sockfd[i]);
 		if (setsockopt(sockfd[i], SOL_SOCKET, SO_SNDBUF, &sendbuff, sizeof(sendbuff)) < 0) {
 			perror("setsockopt sendbuff");
+			return -1;
+		}
+
+		if (setsockopt(sockfd[i], SOL_SOCKET, SO_PRIORITY, &prio, sizeof(prio)) < 0) {
+			perror("setsockopt sk_prio");
 			return -1;
 		}
 
