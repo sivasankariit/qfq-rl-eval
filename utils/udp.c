@@ -172,11 +172,11 @@ int main(int argc, char**argv)
 		nsec = bytes_on_wire(BURST_BYTES) * 8LLU * 1000 / rate_mbps;
 		usec = nsec / 1000;
 
-		printf("Sleeping for %dns (%dus), sendbuff %d, send_size %d, burst %d, fd %d\n",
-		       nsec, usec, sendbuff, send_size, BURST_BYTES, fd);
+		printf("Sleeping for %dns (%dus), sendbuff %d, send_size %d, burst %d, fd %d, prio %d\n",
+		       nsec, usec, sendbuff, send_size, BURST_BYTES, fd, prio);
 	} else {
-		printf("App rate limiting disabled, sendbuff %d, send_size %d, burst %d, fd %d\n",
-		       sendbuff, send_size, BURST_BYTES, fd);
+		printf("App rate limiting disabled, sendbuff %d, send_size %d, burst %d, fd %d, prio %d\n",
+		       sendbuff, send_size, BURST_BYTES, fd, prio);
 	}
 
 	for (i = 0; i < n; i++) {
