@@ -110,7 +110,7 @@ parser.add_argument('--user',
 parser.add_argument('--startport',
                     dest="startport",
                     type=int,
-                    default=1000)
+                    default=5000)
 
 args = parser.parse_args()
 if args.rl == "none":
