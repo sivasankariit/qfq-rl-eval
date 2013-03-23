@@ -73,7 +73,7 @@ unsigned long long spin_sleep(int usec, struct timeval *prev) {
 unsigned long long spin_sleep_nsec(int nsec, struct timespec *prev) {
 	struct timespec start, curr;
 	if (prev->tv_sec == 0 && prev->tv_nsec == 0) {
-		clock_gettime(CLOCK_REALTIME, prev);
+		clock_gettime(CLOCK_REALTIME, &start);
 	} else {
 		start = *prev;
 	}
