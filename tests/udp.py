@@ -257,7 +257,9 @@ class UDP(Expt):
                                     tmpdir=config['SNIFFER_TMPDIR'])
         self.client.copy_local(e(''), self.opts("exptid"))
         if config["NIC_VENDOR"] == "Intel":
-            self.client.clear_hw_rate_limits(numqueues=config['NIC_HW_QUEUES'])
+            self.client.clear_intel_hw_rate_limits(numqueues=config['NIC_HW_QUEUES'])
+        elif config['NIC_VENDOR'] == "Mellanox":
+            self.client.clear_mellanox_hw_rate_limits()
         return
 
 UDP(vars(args)).run()
