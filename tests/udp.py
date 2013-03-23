@@ -242,11 +242,10 @@ class UDP(Expt):
         else:
             rate = 0
 
-        self.client.start_n_udp(num_class, num_senders,
-                                socket.gethostbyname(server), startport,
-                                rate, send_size=1472, mtu=self.opts("mtu"),
-                                dir=e(''), pin=self.opts("pin"),
-                                totalrate = self.opts("rate"))
+        self.client.start_n_trafgen("udp", num_class, num_senders,
+                                    socket.gethostbyname(server), startport,
+                                    rate, send_size=1472, mtu=self.opts("mtu"),
+                                    dir=e(''), pin=self.opts("pin"))
         return
 
     def stop(self):

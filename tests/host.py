@@ -401,12 +401,13 @@ class Host(object):
         cmd = cmd % (config["TRAFGEN"], mode, startport, numports)
         self.cmd_async(cmd)
 
-    def start_n_udp(self, nclass, nprogs, dest, startport,
-                    rate=10000, send_size=1472, mtu=1500, dir=None, pin=False,
-                    totalrate=10000):
-        # Start nprogs udp traffic sources, nclass per each program,
+    def start_n_trafgen(self, mode, nclass, nprogs, dest, startport,
+                        rate=0, send_size=65536, mtu=1500, dir=None, pin=True):
+        # Start nprogs traffic sources (tcp or udp), nclass per each program,
         # starting with @startport.  I assume each destination port is
         # one class.
+        # mode should be tcp or udp
+        # rate is ignored in case of tcp (no app level rate limiting)
         self.cmd("sudo ulimit -n 1024000")
         cpu = 0
 
@@ -422,17 +423,18 @@ class Host(object):
         while nprogs:
             nprogs -= 1
             prio = nprogs  # Set socket priority to the program number
-            outfile = '%s/udp-%d.txt' % (dir, nprogs)
+            outfile = '%s/trafgen-%d.txt' % (dir, nprogs)
             if dir is None:
                 outfile = '/dev/null'
 
-            if config["TRAFGEN"]:
-                # Setting sk_priority to 7 requires root permissions
+            # Setting sk_priority to 7 requires root permissions
+            if (mode == "tcp"):
+                cmd = "sudo %s -c %s -tcp -start_port %s -num_ports %s -send_size %s -sk_prio %s -mtu %s > %s 2>&1"
+                cmd = cmd % (config["TRAFGEN"], dest, startport, nclass_per_prog, send_size, prio, mtu, outfile)
+            elif (mode == "udp"):
                 cmd = "sudo %s -c %s -udp -start_port %s -num_ports %s -rate_mbps %s -send_size %s -sk_prio %s -mtu %s > %s 2>&1"
                 cmd = cmd % (config["TRAFGEN"], dest, startport, nclass_per_prog, rate, send_size, prio, mtu, outfile)
-            else:
-                cmd = "%s %s %s %s %s %s %s > %s 2>&1"
-                cmd = cmd % (config["UDP"], dest, startport, nclass_per_prog, rate, send_size, prio, outfile)
+
             startport += nclass_per_prog
 
             if pin:
