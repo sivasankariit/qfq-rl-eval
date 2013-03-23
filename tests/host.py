@@ -394,7 +394,7 @@ class Host(object):
         return
 
     def start_n_udp(self, nclass, nprogs, dest, startport,
-                    rate=10000, burst=8850, dir=None, pin=False,
+                    rate=10000, send_size=1472, mtu=1500, dir=None, pin=False,
                     totalrate=10000):
         # Start nprogs udp traffic sources, nclass per each program,
         # starting with @startport.  I assume each destination port is
@@ -418,8 +418,12 @@ class Host(object):
             if dir is None:
                 outfile = '/dev/null'
 
-            cmd = "%s %s %s %s %s %s %s > %s 2>&1"
-            cmd = cmd % (config["UDP"], dest, startport, nclass_per_prog, rate, burst, prio, outfile)
+            if config["TRAFGEN"]:
+                cmd = "%s -c %s -udp -start_port %s -num_ports %s -rate_mbps %s -send_size %s -sk_prio %s -mtu %s > %s 2>&1"
+                cmd = cmd % (config["TRAFGEN"], dest, startport, nclass_per_prog, rate, send_size, prio, mtu, outfile)
+            else:
+                cmd = "%s %s %s %s %s %s %s > %s 2>&1"
+                cmd = cmd % (config["UDP"], dest, startport, nclass_per_prog, rate, send_size, prio, outfile)
             startport += nclass_per_prog
 
             if pin:

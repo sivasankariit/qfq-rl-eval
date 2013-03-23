@@ -4,7 +4,7 @@ dir=`date +%b%d--%H-%M`
 time=40
 ns=0
 start=`date`
-mtu=9000
+mtu=1500
 
 function finish {
     killall -9 ssh

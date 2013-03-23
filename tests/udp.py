@@ -240,7 +240,8 @@ class UDP(Expt):
 
         self.client.start_n_udp(num_class, num_senders,
                                 socket.gethostbyname(server), startport,
-                                rate, burst=1472, dir=e(''), pin=self.opts("pin"),
+                                rate, send_size=1472, mtu=self.opts("mtu"),
+                                dir=e(''), pin=self.opts("pin"),
                                 totalrate = self.opts("rate"))
         return
 
