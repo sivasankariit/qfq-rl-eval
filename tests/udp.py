@@ -167,7 +167,8 @@ class UDP(Expt):
             self.sniffer.cmd("killall -9 %s" % config['SNIFFER'])
 
         self.hlist.rmmod()
-        self.hlist.killall("udp trafgen")
+        self.hlist.killall("udp")
+        self.hlist.stop_trafgen()
         self.hlist.remove_qdiscs()
         if config['NIC_VENDOR'] == "Intel":
             self.client.clear_intel_hw_rate_limits(numqueues=config['NIC_HW_QUEUES'])
@@ -253,7 +254,8 @@ class UDP(Expt):
         print 'waiting...'
         sleep(10)
         self.hlist.stop_qfq_monitor()
-        self.hlist.killall("iperf netperf netserver ethstats udp trafgen")
+        self.hlist.killall("iperf netperf netserver ethstats udp")
+        self.hlist.stop_trafgen()
         if self.opts("sniffer"):
             self.sniffer.stop_sniffer()
             self.sniffer.copy_local(e('', tmpdir=config['SNIFFER_TMPDIR']),

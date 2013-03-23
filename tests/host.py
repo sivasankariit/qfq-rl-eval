@@ -393,6 +393,9 @@ class Host(object):
         self.cmd_async(cmd)
         return
 
+    def stop_trafgen(self):
+        self.cmd("sudo killall -9 trafgen")
+
     def start_trafgen_server(self, mode, startport, numports):
         cmd = "%s -s -%s -start_port %s -num_ports %s > /dev/null 2>&1"
         cmd = cmd % (config["TRAFGEN"], mode, startport, numports)
@@ -424,7 +427,8 @@ class Host(object):
                 outfile = '/dev/null'
 
             if config["TRAFGEN"]:
-                cmd = "%s -c %s -udp -start_port %s -num_ports %s -rate_mbps %s -send_size %s -sk_prio %s -mtu %s > %s 2>&1"
+                # Setting sk_priority to 7 requires root permissions
+                cmd = "sudo %s -c %s -udp -start_port %s -num_ports %s -rate_mbps %s -send_size %s -sk_prio %s -mtu %s > %s 2>&1"
                 cmd = cmd % (config["TRAFGEN"], dest, startport, nclass_per_prog, rate, send_size, prio, mtu, outfile)
             else:
                 cmd = "%s %s %s %s %s %s %s > %s 2>&1"
