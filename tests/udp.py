@@ -151,11 +151,11 @@ class UDP(Expt):
         sniffer = self.opts("sniffer")
         startport = self.opts("startport")
 
-        #self.server = Host(client)
+        self.server = Host(server)
         self.client = Host(client)
         self.sniffer = Host(sniffer)
         self.hlist = HostList()
-        #self.hlist.append(self.server)
+        self.hlist.append(self.server)
         self.hlist.append(self.client)
 
         self.hlist.rmrf(e(""))
@@ -167,7 +167,7 @@ class UDP(Expt):
             self.sniffer.cmd("killall -9 %s" % config['SNIFFER'])
 
         self.hlist.rmmod()
-        self.hlist.killall("udp")
+        self.hlist.killall("udp trafgen")
         self.hlist.remove_qdiscs()
         if config['NIC_VENDOR'] == "Intel":
             self.client.clear_intel_hw_rate_limits(numqueues=config['NIC_HW_QUEUES'])
@@ -176,6 +176,9 @@ class UDP(Expt):
             self.client.clear_mellanox_hw_rate_limits()
             sleep(4)
         #self.hlist.insmod_qfq()
+
+        # Start listener process on server
+        self.server.start_trafgen_server("udp", startport, self.opts("num_class"))
 
         if self.opts("rl") == "htb":
             self.client.add_htb_qdisc(str(args.rate) + "Mbit", args.htb_mtu)
@@ -250,7 +253,7 @@ class UDP(Expt):
         print 'waiting...'
         sleep(10)
         self.hlist.stop_qfq_monitor()
-        self.hlist.killall("iperf netperf netserver ethstats udp")
+        self.hlist.killall("iperf netperf netserver ethstats udp trafgen")
         if self.opts("sniffer"):
             self.sniffer.stop_sniffer()
             self.sniffer.copy_local(e('', tmpdir=config['SNIFFER_TMPDIR']),

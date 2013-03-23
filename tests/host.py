@@ -393,6 +393,11 @@ class Host(object):
         self.cmd_async(cmd)
         return
 
+    def start_trafgen_server(self, mode, startport, numports):
+        cmd = "%s -s -%s -start_port %s -num_ports %s > /dev/null 2>&1"
+        cmd = cmd % (config["TRAFGEN"], mode, startport, numports)
+        self.cmd_async(cmd)
+
     def start_n_udp(self, nclass, nprogs, dest, startport,
                     rate=10000, send_size=1472, mtu=1500, dir=None, pin=False,
                     totalrate=10000):
