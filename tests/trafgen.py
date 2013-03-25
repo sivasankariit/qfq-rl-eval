@@ -157,6 +157,7 @@ class UDP(Expt):
             self.client.clear_mellanox_hw_rate_limits()
             sleep(4)
         #self.hlist.insmod_qfq()
+        self.hlist.configure_tcp_limit_output_bytes()
 
         # Start listener process on server
         self.server.start_trafgen_server(self.opts("proto"), startport, self.opts("num_class"))

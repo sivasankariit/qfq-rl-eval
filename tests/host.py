@@ -361,6 +361,10 @@ class Host(object):
         c += " echo 0 > /proc/irq/$n/smp_affinity; "
         self.cmd(c)
 
+    def configure_tcp_limit_output_bytes(self):
+        c = "sudo sysctl -w net.ipv4.tcp_limit_output_bytes=13107200"
+        self.cmd(c)
+
     # starting common apps
     def start_netserver(self):
         self.cmd_async("%s/netserver" % config['NETPERF_DIR'])
