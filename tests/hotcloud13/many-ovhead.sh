@@ -34,12 +34,13 @@ for rl in $EXPT_RL; do
 for nclasses in $EXPT_NCLASSES; do
 for run in $EXPT_RUN; do
     exptid=rl-$rl-rate-$rate-ncl-$nclasses-run-$run
-    python udp.py --nrr 0 \
+    python trafgen.py --proto tcp \
         --exptid $exptid \
         -t $time \
         --rl $rl \
         --rate $rate \
         --mtu $mtu \
+        --htb-mtu $mtu \
         --num-class $nclasses \
         --ns $NUM_CPUS # Same num of sender progs as CPUs
 
