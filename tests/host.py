@@ -55,11 +55,12 @@ class SSHWrapper:
         self.ssh = ssh
 
     def cmd_async(self, cmd):
-        cmd = "(%s;) &" % cmd
+        cmd = " (%s;) &" % cmd
         self.ssh.sendline(cmd)
         self.ssh.expect(config['PEXPECT_PROMPT'])
 
     def cmd(self, c):
+        c = " %s" % c
         self.ssh.sendline(c)
         self.ssh.expect(config['PEXPECT_PROMPT'])
 
