@@ -168,7 +168,7 @@ class UDP(Expt):
             if self.opts("num_class") is not None:
                 num_hash_bits = int(math.log(self.opts("num_class"), 2))
                 self.client.add_htb_hash(num_hash_bits=num_hash_bits)
-                self.client.add_n_htb_class(rate=rate_str, num_class=self.opts("num_class"))
+                self.client.add_n_htb_class(rate=rate_str, ceil=rate_str, num_class=self.opts("num_class"))
                 # Just verify that we have created all classes correctly.
                 self.client.htb_class_filter_output(e(''))
         elif self.opts("rl") == "tbf":
