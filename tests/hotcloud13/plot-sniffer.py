@@ -41,6 +41,9 @@ parser.add_argument('--num-classes', '-n',
 parser.add_argument('--out', '-o',
                     help="save plot to file")
 
+parser.add_argument('--burstout', '-b',
+                    help="save burst length plot to file")
+
 parser.add_argument('--divisor',
                     help="Divide x-axis data by this value",
                     default=1000)
@@ -65,6 +68,8 @@ def plot_file(file):
     if len(sniff.seen_packet_len) != 1:
         print 'Saw more than one packet length on wire'
 
+    # Plot inter-packet arrival times
+    plt.figure()
     for port in sniff.get_ipt().keys():
         data = sniff.get_ipt()[port]
         xs, ys = cdf_list(data)
@@ -105,5 +110,54 @@ def plot_file(file):
     else:
         print 'displaying plot...'
         plt.show()
+
+    if not args.burstout:
+        return
+
+    # Plot burst lengths
+    plt.figure()
+    for port in sniff.get_burstlen().keys():
+        data = sniff.get_burstlen()[port]
+        xs, ys = cdf_list(data)
+        xs = map(lambda e: e, xs)
+        plt.plot(xs, ys, lw=2, label=str(port))
+
+    #plt.legend(loc="upper right", bbox_to_anchor=(1.2, 1))
+    d = sniff.summary_burstlen()
+    print "burst lengths"
+    print d
+    for port in d.keys():
+        avg, pc99 = d[port]
+        plt.axvline(avg, lw=2, ls='--', color='green')
+        plt.axvline(pc99, lw=2, ls='--', color='red')
+
+    plt.xlabel("Burst length in packets")
+    plt.ylabel("fractiles")
+    plt.title("CDF of burst lengths in packets")
+    print 'saved burst length cdf to', args.burstout
+    plt.savefig(args.burstout)
+
+    # Plot burst times (burst length in microsecs)
+    plt.figure()
+    for port in sniff.get_bursttime().keys():
+        data = sniff.get_bursttime()[port]
+        xs, ys = cdf_list(data)
+        xs = map(lambda e: e/args.divisor, xs)
+        plt.plot(xs, ys, lw=2, label=str(port))
+
+    d = sniff.summary_bursttime()
+    print "burst times"
+    print d
+    for port in d.keys():
+        avg, pc99 = d[port]
+        plt.axvline(avg / args.divisor, lw=2, ls='--', color='green')
+        plt.axvline(pc99 / args.divisor, lw=2, ls='--', color='red')
+
+    plt.xlabel("Burst length in %s" % units)
+    plt.ylabel("fractiles")
+    plt.title("CDF of burst lengths in %s" % units)
+    timecdf = args.burstout[:-4] + "_time.pdf"
+    print 'saved burst time cdf to', timecdf
+    plt.savefig(timecdf)
 
 plot_file(args.file)

@@ -83,6 +83,8 @@ class SnifferParser:
         self.ignore_frac = ignore_frac
         self.seen_packet_len = []
         self.ipt = defaultdict(list)
+        self.burstlen = defaultdict(list)
+        self.bursttime = defaultdict(list)
 
         try:
             self.lines = open(filename).xreadlines()
@@ -102,6 +104,9 @@ class SnifferParser:
         line_num = 0
         data = defaultdict(list)
         prev_nsec = defaultdict(int)
+        prev_port = 0
+        curr_burstlen = 0
+        burst_starttime = 0
         for line in self.lines:
             line_num += 1
             if line_num > self.max_lines:
@@ -109,6 +114,7 @@ class SnifferParser:
             d = self.parse_line(line)
             len = d[1]
             port = d[2]
+            # Record inter-packet times for each class
             if prev_nsec[port] == 0:
                 prev_nsec[port] = d[0]
             else:
@@ -117,6 +123,19 @@ class SnifferParser:
                 prev_nsec[port] = nsec
                 # data.append((delta, packet_len))
                 data[port].append((delta, packet_len))
+            # Record burst lengths of each class
+            if prev_port == 0:
+                prev_port = port
+                curr_burstlen = 1
+                burst_starttime = d[0]
+            elif prev_port == port:
+                curr_burstlen += 1
+            else:
+                self.burstlen[prev_port].append(curr_burstlen)
+                self.bursttime[prev_port].append(d[0] - burst_starttime)
+                prev_port = port
+                curr_burstlen = 1
+                burst_starttime = d[0]
             if len not in self.seen_packet_len:
                 self.seen_packet_len.append(len)
         self.data = defaultdict(list)
@@ -126,20 +145,51 @@ class SnifferParser:
             if self.ignore_frac > 0:
                 L = int(self.data[port].__len__() * self.ignore_frac)
                 self.data[port] = self.data[port][L:-L]
+                L = int(self.burstlen[port].__len__() * self.ignore_frac)
+                self.burstlen[port] = self.burstlen[port][L:-L]
             self.ipt[port] = map(lambda e: e[0], self.data[port])
             self.ipt[port].sort()
+            self.burstlen[port].sort()
 
     def get_ipt(self):
         return self.ipt
 
+    def get_burstlen(self):
+        return self.burstlen
+
+    def get_bursttime(self):
+        return self.bursttime
+
     def summary(self):
         ret = dict()
         for port in self.ipt.keys():
-	    if port == 0:
-	        continue
+            if port == 0:
+                continue
             avg = mean(self.ipt[port])
             L = len(self.ipt[port])
             pc99 = self.ipt[port][int(0.99 * L)]
+            ret[port] = (avg, pc99)
+        return ret
+
+    def summary_burstlen(self):
+        ret = dict()
+        for port in self.burstlen.keys():
+            if port == 0:
+                continue
+            avg = mean(self.burstlen[port])
+            L = len(self.burstlen[port])
+            pc99 = self.burstlen[port][int(0.99 * L)]
+            ret[port] = (avg, pc99)
+        return ret
+
+    def summary_bursttime(self):
+        ret = dict()
+        for port in self.bursttime.keys():
+            if port == 0:
+                continue
+            avg = mean(self.bursttime[port])
+            L = len(self.bursttime[port])
+            pc99 = self.bursttime[port][int(0.99 * L)]
             ret[port] = (avg, pc99)
         return ret
 

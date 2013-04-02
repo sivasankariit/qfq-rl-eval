@@ -32,10 +32,13 @@ for run in $EXPT_RUN; do
         -r `echo $[$rate / 1000]` \
         -n $nclasses \
         --max 1000000 \
-        -o $dir/$exptid/pkt_arr.pdf > $dir/$exptid/plot-sniffer-output.txt
+        -o $dir/$exptid/pkt_arr.pdf \
+        -b $dir/$exptid/burstlen.pdf > $dir/$exptid/plot-sniffer-output.txt
     cp $dir/$exptid/pkt_arr.pdf $TMPDIR/$exptid/pkt_arr.pdf
     cp $dir/$exptid/pkt_arr_zoomed.pdf $TMPDIR/$exptid/pkt_arr_zoomed.pdf
     cp $dir/$exptid/plot-sniffer-output.txt $TMPDIR/$exptid/plot-sniffer-output.txt
+    cp $dir/$exptid/burstlen.pdf $TMPDIR/$exptid/burstlen.pdf
+    cp $dir/$exptid/burstlen_time.pdf $TMPDIR/$exptid/burstlen_time.pdf
     #echo "    Removing untar'd sniffer file"
     #rm $TMPDIR/$exptid/pkt_snf.txt
 done;
