@@ -236,7 +236,8 @@ class UDP(Expt):
         return
 
     def stop(self):
-        self.client.qfq_stats(e(''))
+        if self.opts("rl") == "qfq":
+            self.client.qfq_stats(e(''))
         print 'waiting...'
         sleep(10)
         self.hlist.stop_qfq_monitor()
