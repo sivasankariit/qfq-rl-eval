@@ -459,7 +459,7 @@ class Host(object):
         dir = os.path.abspath(dir)
         path = os.path.join(dir, "cpu.txt")
         self.cmd("mkdir -p %s" % dir)
-        cmd = "(top -b -p1 -d1 | grep --line-buffered \"^Cpu\") > %s" % path
+        cmd = "(top -b -p1 -d1 | grep --line-buffered '^Cpu') > %s" % path
         return self.cmd_async(cmd)
 
     def start_bw_monitor(self, dir="/tmp", interval_sec=2):
