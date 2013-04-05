@@ -44,6 +44,9 @@ class SnifferParser:
     def get_burstlen_nsec(self):
         return self.burstlen_nsec
 
+    def get_seen_packet_lengths(self):
+        return self.seen_packet_len
+
     def parse_line(self, line):
         nsec, _, _, packet_len, port = line.strip().split(' ')
         nsec = nsec.split('.')[0]
