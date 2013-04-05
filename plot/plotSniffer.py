@@ -7,6 +7,13 @@ import sys
 
 from SnifferParser import SnifferParser
 from pickleExptLogs import readPickledFile
+from expsiftUtils import readDirTagFileProperty
+
+
+def idealIptNsec(packet_len, rate_gbps):
+    # 24 bytes framing overhead per packet in Ethernet
+    FRAMING_OVERHEAD = 24
+    return (packet_len + FRAMING_OVERHEAD) * 8 / (rate_gbps)
 
 
 # Plot a CDF graph with 3 kinds of lines
@@ -113,6 +120,51 @@ def plotBurstlenUsec(directory):
                               "CDF of burst length in microseconds")
 
 
+# Plot CDF of inter-packet arrival times microseconds for each traffic class
+def plotIpt(directory):
+    # Read inter-packet arrival times from the sniffer pickled files
+    ipt_pfile = os.path.join(directory, 'pickled/ipt.txt')
+    (ipt, summary) = readPickledFile(ipt_pfile)
+    ports = summary.keys()
+
+    # Read packet lengths from sniffer pickled files
+    pkt_len_pfile = os.path.join(directory, 'pickled/pkt_len.txt')
+    seen_pkt_len = readPickledFile(pkt_len_pfile)
+
+    cdf_data = []
+    avg_data = []
+    pc99_data = []
+
+    for port in ports:
+        # Convert from nanoseconds to microseconds for plotting
+        cdf_data.append(map(lambda x: x / 1000.0, ipt[port]))
+        avg, pc99 = summary[port]
+        avg_data.append(avg / 1000.0)
+        pc99_data.append(pc99 / 1000.0)
+
+    # Generate CDF plot
+    plot = plotCDFGraphSimple(cdf_data, avg_data, pc99_data,
+                              "Inter-packet time (in microseconds)",
+                              "Fractiles",
+                              "CDF of inter-packet time (not inter-packet gap) "
+                              "in microseconds")
+
+    # Compute ideal inter-packet arrival time
+    rate_mbps = float(readDirTagFileProperty(directory, "rate_mbps"))
+    nclasses = int(readDirTagFileProperty(directory, "nclasses"))
+    rate_per_class_gbps = rate_mbps / (1000.0 * nclasses)
+    ideal_nsec = idealIptNsec(seen_pkt_len[0], rate_per_class_gbps)
+
+    # Add VLine for the ideal inter-packet time
+    # Also convert from nanoseconds to microseconds for plotting
+    ideal_vline = boomslang.VLine(color="magenta", lineStyle="-.", width=2)
+    ideal_vline.xValues = [ ideal_nsec / 1000.0 ]
+    ideal_vline.label = "Ideal"
+    plot.add(ideal_vline)
+
+    return plot
+
+
 def main(argv):
 
     if len(argv) != 3:
@@ -121,6 +173,10 @@ def main(argv):
 
     expt_dir = argv[1]
     plotfile_prefix = argv[2]
+
+    # Plot inter-packet arrival time in microseconds
+    ipt_plot = plotIpt(expt_dir)
+    ipt_plot.save(plotfile_prefix + 'ipt.png')
 
     # Plot burstlen in packets
     burstlen_pkt_plot = plotBurstlenPkt(expt_dir)
