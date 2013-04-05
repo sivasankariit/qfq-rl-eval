@@ -68,6 +68,7 @@ def plotCDFGraphSimple(cdf_data, avg_data, pc99_data,
     # Grid
     plot.grid.color = "lightgray"
     plot.grid.style = "dotted"
+    plot.grid.lineWidth = 0.8
     plot.grid.visible = True
 
     return plot
