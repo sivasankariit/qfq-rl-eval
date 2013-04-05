@@ -17,9 +17,6 @@ from django.utils import http
 # Django HttpResponse object
 def individual_plot(expt_dir = '', properties = set(), templateQDict = {}):
 
-    expt_logs_conf = getattr(settings, 'EXPT_LOGS', {})
-    expt_logs_dir = expt_logs_conf['directory']
-
     if not expt_dir:
         return django.http.HttpResponse('No experiment directory specified.')
 
