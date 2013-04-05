@@ -112,6 +112,7 @@ class SnifferParser:
             self.ipt[port] = map(lambda e: e[0], self.data[port])
             self.ipt[port].sort()
             self.burstlen_pkt[port].sort()
+            self.burstlen_nsec[port].sort()
 
     def summary_ipt(self):
         ret = dict()
