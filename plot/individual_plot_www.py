@@ -17,8 +17,17 @@ from django.utils import http
 # Django HttpResponse object
 def individual_plot(expt_dir = '', properties = set(), templateQDict = {}):
 
+    expt_logs_conf = getattr(settings, 'EXPT_LOGS', {})
+    expt_logs_dir = expt_logs_conf['directory']
+
     if not expt_dir:
         return django.http.HttpResponse('No experiment directory specified.')
+
+    # URLs of plots
+    uri_burstlen_pkt = (reverse('expsift.views.home') + 'expt-logs/' +
+            expt_dir[len(expt_logs_dir):] + '/plot/burstlen_pkt.png')
+
+    templateQDict["uri_burstlen_pkt"] = uri_burstlen_pkt
 
     # Render plots to HttpResponse and return it
     return render_to_response('plot/individual.html', templateQDict)

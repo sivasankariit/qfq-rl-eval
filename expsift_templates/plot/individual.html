@@ -1,1 +1,25 @@
 {% extends "expt/individual.html" %}
+
+{% block expt_info %}
+
+<style type="text/css">
+    div.plot_container { overflow: hidden; }
+    div.plot_container { border: 1px dashed blue; }
+    div.plot_container { margin: 10px; }
+    div.plot_container { padding: 10px; }
+</style>
+
+
+
+
+
+<div id="burstlen_pkt_plot" class="plot_container">
+{% if uri_burstlen_pkt %}
+    <img id="burstlen_pkt_plot_png" alt = "Burstlen in packets CDF"
+         src = "{{ uri_burstlen_pkt }}">
+{% else %}
+    CDF of burst length in packets: plot not available
+{% endif %}
+</div> <!-- burstlen_pkt_plot -->
+
+{% endblock%} <!-- expt_info -->
