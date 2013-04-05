@@ -66,7 +66,7 @@ def plotCDFGraphSimple(cdf_data, avg_data, pc99_data,
     return plot
 
 
-# Plot CDF of inter-packet arrival times for each traffic class
+# Plot CDF of burst lengths in packets for each traffic class
 def plotBurstlenPkt(directory):
     # Read burst lengths from the sniffer pickled files
     burstlen_pkt_pfile = os.path.join(directory, 'pickled/burstlen_pkt.txt')
@@ -84,9 +84,33 @@ def plotBurstlenPkt(directory):
         pc99_data.append(pc99)
 
     return plotCDFGraphSimple(cdf_data, avg_data, pc99_data,
-                              "Burst length in packets",
+                              "Burst length (in packets)",
                               "Fractiles",
                               "CDF of burst length in packets")
+
+
+# Plot CDF of burst lengths in microseconds for each traffic class
+def plotBurstlenUsec(directory):
+    # Read burst lengths from the sniffer pickled files
+    burstlen_nsec_pfile = os.path.join(directory, 'pickled/burstlen_nsec.txt')
+    (burstlen_nsec, summary) = readPickledFile(burstlen_nsec_pfile)
+    ports = summary.keys()
+
+    cdf_data = []
+    avg_data = []
+    pc99_data = []
+
+    for port in ports:
+        # Convert from nanoseconds to microseconds for plotting
+        cdf_data.append(map(lambda x: x / 1000.0, burstlen_nsec[port]))
+        avg, pc99 = summary[port]
+        avg_data.append(avg / 1000.0)
+        pc99_data.append(pc99 / 1000.0)
+
+    return plotCDFGraphSimple(cdf_data, avg_data, pc99_data,
+                              "Burst length (in microseconds)",
+                              "Fractiles",
+                              "CDF of burst length in microseconds")
 
 
 def main(argv):
@@ -101,6 +125,10 @@ def main(argv):
     # Plot burstlen in packets
     burstlen_pkt_plot = plotBurstlenPkt(expt_dir)
     burstlen_pkt_plot.save(plotfile_prefix + 'burstlen_pkt.png')
+
+    # Plot burstlen in microseconds
+    burstlen_usec_plot = plotBurstlenUsec(expt_dir)
+    burstlen_usec_plot.save(plotfile_prefix + 'burstlen_usec.png')
 
 
 if __name__ == '__main__':
