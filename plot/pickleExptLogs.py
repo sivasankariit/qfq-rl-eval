@@ -31,6 +31,15 @@ def pickleSnfFile(snf_file, pickle_dir, max_lines=100000):
     cPickle.dump(data, fd)
     fd.close()
 
+    # Pickle burstlen_nsec data
+    burstlen_nsec_pfile = os.path.join(pickle_dir, 'burstlen_nsec.txt')
+    burstlen_nsec = sniff.get_burstlen_nsec()
+    summary = sniff.summary_burstlen_nsec()
+    data = (burstlen_nsec, summary)
+    fd = open(burstlen_nsec_pfile, 'wb')
+    cPickle.dump(data, fd)
+    fd.close()
+
 
 def main(argv):
 
