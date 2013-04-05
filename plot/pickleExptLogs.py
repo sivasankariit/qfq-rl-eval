@@ -43,7 +43,8 @@ def main(argv):
 
     # Temp directory to extract the sniffer data and pickle it
     snf_data_dir = os.path.join(tmp_dir, 'snf_data')
-    os.makedirs(snf_data_dir)
+    if not os.path.exists(snf_data_dir):
+        os.makedirs(snf_data_dir)
 
     # Extract the sniffer data to the temp directory
     snf_tarfile = os.path.join(expt_dir, 'logs/pkt_snf.tar.gz')
@@ -51,10 +52,14 @@ def main(argv):
     tar.extractall(snf_data_dir)
     tar.close()
 
+    # Create directory for pickled files
+    pickle_dir = os.path.join(expt_dir, 'pickled')
+    if not os.path.exists(pickle_dir):
+        os.makedirs(pickle_dir)
+
     # Pickle sniffer data
     pickleSnfFile(os.path.join(snf_data_dir, 'pkt_snf.txt'),
-                  os.path.join(expt_dir, 'pickled'),
-                  max_lines = 1000000)
+                  pickle_dir, max_lines = 1000000)
 
 
 if __name__ == '__main__':
