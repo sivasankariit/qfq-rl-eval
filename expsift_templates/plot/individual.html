@@ -13,6 +13,19 @@
 
 
 
+<div id="ipt_plot" class="plot_container">
+{% if uri_ipt %}
+    <img id="ipt_plot_png" alt = "Inter-packet time in usecs CDF"
+         src = "{{ uri_ipt }}">
+{% else %}
+    CDF of inter-packet arrival times : plot not available
+{% endif %}
+</div> <!-- burstlen_pkt_plot -->
+
+
+
+
+
 <div id="burstlen_pkt_plot" class="plot_container">
 {% if uri_burstlen_pkt %}
     <img id="burstlen_pkt_plot_png" alt = "Burstlen in packets CDF"
