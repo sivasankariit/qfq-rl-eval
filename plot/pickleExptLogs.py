@@ -17,7 +17,7 @@ def readPickledFile(infile):
     return data
 
 
-def pickleSnfFile(snf_file, pickle_dir, max_lines=100000):
+def pickleSnfFile(snf_file, pickle_dir, stats_dir, max_lines=100000):
 
     # Parse the sniffer log file
     sniff = SnifferParser(snf_file, max_lines=max_lines)
@@ -25,8 +25,8 @@ def pickleSnfFile(snf_file, pickle_dir, max_lines=100000):
     # Pickle burstlen_pkt data
     burstlen_pkt_pfile = os.path.join(pickle_dir, 'burstlen_pkt.txt')
     burstlen_pkt = sniff.get_burstlen_pkt()
-    summary = sniff.summary_burstlen_pkt()
-    data = (burstlen_pkt, summary)
+    summary_burstlen_pkt = sniff.summary_burstlen_pkt()
+    data = (burstlen_pkt, summary_burstlen_pkt)
     fd = open(burstlen_pkt_pfile, 'wb')
     cPickle.dump(data, fd)
     fd.close()
@@ -34,8 +34,8 @@ def pickleSnfFile(snf_file, pickle_dir, max_lines=100000):
     # Pickle burstlen_nsec data
     burstlen_nsec_pfile = os.path.join(pickle_dir, 'burstlen_nsec.txt')
     burstlen_nsec = sniff.get_burstlen_nsec()
-    summary = sniff.summary_burstlen_nsec()
-    data = (burstlen_nsec, summary)
+    summary_burstlen_nsec = sniff.summary_burstlen_nsec()
+    data = (burstlen_nsec, summary_burstlen_nsec)
     fd = open(burstlen_nsec_pfile, 'wb')
     cPickle.dump(data, fd)
     fd.close()
@@ -43,8 +43,8 @@ def pickleSnfFile(snf_file, pickle_dir, max_lines=100000):
     # Pickle inter-packet arrival time data
     ipt_pfile = os.path.join(pickle_dir, 'ipt.txt')
     ipt = sniff.get_ipt()
-    summary = sniff.summary_ipt()
-    data = (ipt, summary)
+    summary_ipt = sniff.summary_ipt()
+    data = (ipt, summary_ipt)
     fd = open(ipt_pfile, 'wb')
     cPickle.dump(data, fd)
     fd.close()
@@ -57,6 +57,20 @@ def pickleSnfFile(snf_file, pickle_dir, max_lines=100000):
     fd = open(pkt_len_freq_pfile, 'wb')
     cPickle.dump(data, fd)
     fd.close()
+
+    # Write stats about the sniffer data
+    snf_stats_file = os.path.join(stats_dir, 'snf_stats.txt')
+    snf_stats_fd = open(snf_stats_file, 'w')
+    snf_stats_fd.write('Seen packet lengths: %s\n' %
+                       str(sorted(sniff.get_seen_packet_lengths())))
+    snf_stats_fd.write('Most frequent packet length: %d\n' % most_freq_pkt_len)
+    snf_stats_fd.write('--- Inter-packet times (port_number, avg, pc99)---\n')
+    snf_stats_fd.write('%s\n' % str(summary_ipt))
+    snf_stats_fd.write('--- Burst length in packets (port_number, avg, pc99)---\n')
+    snf_stats_fd.write('%s\n' % str(summary_burstlen_pkt))
+    snf_stats_fd.write('--- Burst length in nanosecs (port_number, avg, pc99)---\n')
+    snf_stats_fd.write('%s\n' % str(summary_burstlen_nsec))
+    snf_stats_fd.close()
 
 
 def main(argv):
@@ -84,9 +98,14 @@ def main(argv):
     if not os.path.exists(pickle_dir):
         os.makedirs(pickle_dir)
 
+    # Create directory for saving statistics
+    stats_dir = os.path.join(expt_dir, 'stats')
+    if not os.path.exists(stats_dir):
+        os.makedirs(stats_dir)
+
     # Pickle sniffer data
     pickleSnfFile(os.path.join(snf_data_dir, 'pkt_snf.txt'),
-                  pickle_dir, max_lines = 1000000)
+                  pickle_dir, stats_dir, max_lines = 1000000)
 
 
 if __name__ == '__main__':
