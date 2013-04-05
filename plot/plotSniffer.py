@@ -13,25 +13,22 @@ from pickleExptLogs import readPickledFile
 # 1. CDF Line   : varying colors for each individual cdf line
 # 2. Avg VLine  : Average in green color
 # 3. pc99 VLine : (99th percentile) in red color
-def plotCDFGraphSimple(labels, cdf_data, avg_data, pc99_data,
+def plotCDFGraphSimple(cdf_data, avg_data, pc99_data,
                        xLabel, yLabel, title):
 
     colors = ('b', 'g', 'r', 'c', 'm', 'y')
 
     # We must have same number of lines for CDF, avg and pc99
-    assert(len(labels) == len(cdf_data))
     assert(len(cdf_data) == len(avg_data))
     assert(len(avg_data) == len(pc99_data))
 
     plot = boomslang.Plot()
 
     # Plot all CDF lines
-    for index in xrange(len(labels)):
+    for index in xrange(len(cdf_data)):
         data = cdf_data[index]
-        label = labels[index]
 
         cdf_line = boomslang.Utils.getCDF(data)
-        cdf_line.label = label
         cdf_line.lineWidth = 2
         cdf_line.color = colors[index % len(colors)]
         plot.add(cdf_line)
@@ -39,20 +36,29 @@ def plotCDFGraphSimple(labels, cdf_data, avg_data, pc99_data,
     # Plot VLines for avg
     avg_vline = boomslang.VLine(color="green", lineStyle="--")
     avg_vline.xValues = avg_data
+    avg_vline.label = "Avg."
     plot.add(avg_vline)
 
     # Plot VLines for pc99
     pc99_vline = boomslang.VLine(color="red", lineStyle="--")
     pc99_vline.xValues = pc99_data
+    pc99_vline.label = "99th perc."
     plot.add(pc99_vline)
 
+    # Set title and axes labels
     plot.setXLabel(xLabel)
     plot.setYLabel(yLabel)
     plot.setTitle(title)
+    plot.hasLegend()
+
+    # Font size
+    plot.setLegendLabelSize("small")
     plot.setTitleSize("small")
     plot.setAxesLabelSize("small")
     plot.setXTickLabelSize("small")
     plot.setYTickLabelSize("small")
+
+    # Grid
     plot.grid.color = "lightgray"
     plot.grid.style = "dotted"
     plot.grid.visible = True
@@ -67,7 +73,6 @@ def plotBurstlenPkt(directory):
     (burstlen_pkt, summary) = readPickledFile(burstlen_pkt_pfile)
     ports = summary.keys()
 
-    labels = [ str(port) for port in ports ]
     cdf_data = []
     avg_data = []
     pc99_data = []
@@ -78,7 +83,7 @@ def plotBurstlenPkt(directory):
         avg_data.append(avg)
         pc99_data.append(pc99)
 
-    return plotCDFGraphSimple(labels, cdf_data, avg_data, pc99_data,
+    return plotCDFGraphSimple(cdf_data, avg_data, pc99_data,
                               "Burst length in packets",
                               "Fractiles",
                               "CDF of burst length in packets")
