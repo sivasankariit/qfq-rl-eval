@@ -23,7 +23,7 @@ class SnifferParser:
         self.filename = filename
         self.max_lines = max_lines
         self.ignore_frac = ignore_frac
-        self.seen_packet_len = []
+        self.pkt_len_freq = {}
         self.ipt = defaultdict(list)
         self.burstlen_pkt = defaultdict(list)
         self.burstlen_nsec = defaultdict(list)
@@ -45,7 +45,16 @@ class SnifferParser:
         return self.burstlen_nsec
 
     def get_seen_packet_lengths(self):
-        return self.seen_packet_len
+        return self.pkt_len_freq.keys()
+
+    def get_pkt_len_freq(self):
+        return self.pkt_len_freq
+
+    def get_most_freq_pkt_length(self):
+        max_freq = max(self.pkt_len_freq.values())
+        pkt_lens = [ l for (l, freq) in self.pkt_len_freq.iteritems()
+                       if freq == max_freq ]
+        return pkt_lens[0]
 
     def parse_line(self, line):
         nsec, _, _, packet_len, port = line.strip().split(' ')
@@ -87,8 +96,10 @@ class SnifferParser:
                 prev_port = port
                 curr_burstlen_pkt = 1
                 burst_starttime = d[0]
-            if pkt_len not in self.seen_packet_len:
-                self.seen_packet_len.append(pkt_len)
+            if pkt_len not in self.pkt_len_freq:
+                self.pkt_len_freq[pkt_len] = 1
+            else:
+                self.pkt_len_freq[pkt_len] += 1
         self.data = defaultdict(list)
         self.ipt = defaultdict(list)
         for port in data.keys():

@@ -50,10 +50,12 @@ def pickleSnfFile(snf_file, pickle_dir, max_lines=100000):
     fd.close()
 
     # Pickle packet length data
-    pkt_len_pfile = os.path.join(pickle_dir, 'pkt_len.txt')
-    pkt_len = sniff.get_seen_packet_lengths()
-    fd = open(pkt_len_pfile, 'wb')
-    cPickle.dump(pkt_len, fd)
+    pkt_len_freq_pfile = os.path.join(pickle_dir, 'pkt_len_freq.txt')
+    pkt_len_freq = sniff.get_pkt_len_freq()
+    most_freq_pkt_len = sniff.get_most_freq_pkt_length()
+    data = (most_freq_pkt_len, pkt_len_freq)
+    fd = open(pkt_len_freq_pfile, 'wb')
+    cPickle.dump(data, fd)
     fd.close()
 
 

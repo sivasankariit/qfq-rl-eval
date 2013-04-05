@@ -128,8 +128,8 @@ def plotIpt(directory):
     ports = summary.keys()
 
     # Read packet lengths from sniffer pickled files
-    pkt_len_pfile = os.path.join(directory, 'pickled/pkt_len.txt')
-    seen_pkt_len = readPickledFile(pkt_len_pfile)
+    pkt_len_freq_pfile = os.path.join(directory, 'pickled/pkt_len_freq.txt')
+    (most_freq_pkt_len, pkt_len_freq) = readPickledFile(pkt_len_freq_pfile)
 
     cdf_data = []
     avg_data = []
@@ -149,11 +149,12 @@ def plotIpt(directory):
                               "CDF of inter-packet time (not inter-packet gap) "
                               "in microseconds")
 
-    # Compute ideal inter-packet arrival time
+    # Compute ideal inter-packet arrival time for most frequently seen packet
+    # length in the trace
     rate_mbps = float(readDirTagFileProperty(directory, "rate_mbps"))
     nclasses = int(readDirTagFileProperty(directory, "nclasses"))
     rate_per_class_gbps = rate_mbps / (1000.0 * nclasses)
-    ideal_nsec = idealIptNsec(seen_pkt_len[0], rate_per_class_gbps)
+    ideal_nsec = idealIptNsec(most_freq_pkt_len, rate_per_class_gbps)
 
     # Add VLine for the ideal inter-packet time
     # Also convert from nanoseconds to microseconds for plotting
