@@ -40,6 +40,22 @@ def pickleSnfFile(snf_file, pickle_dir, max_lines=100000):
     cPickle.dump(data, fd)
     fd.close()
 
+    # Pickle inter-packet arrival time data
+    ipt_pfile = os.path.join(pickle_dir, 'ipt.txt')
+    ipt = sniff.get_ipt()
+    summary = sniff.summary_ipt()
+    data = (ipt, summary)
+    fd = open(ipt_pfile, 'wb')
+    cPickle.dump(data, fd)
+    fd.close()
+
+    # Pickle packet length data
+    pkt_len_pfile = os.path.join(pickle_dir, 'pkt_len.txt')
+    pkt_len = sniff.get_seen_packet_lengths()
+    fd = open(pkt_len_pfile, 'wb')
+    cPickle.dump(pkt_len, fd)
+    fd.close()
+
 
 def main(argv):
 
