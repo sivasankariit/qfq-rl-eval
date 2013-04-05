@@ -22,4 +22,17 @@
 {% endif %}
 </div> <!-- burstlen_pkt_plot -->
 
+
+
+
+
+<div id="burstlen_usec_plot" class="plot_container">
+{% if uri_burstlen_usec %}
+    <img id="burstlen_usec_plot_png" alt = "Burstlen in usecs CDF"
+         src = "{{ uri_burstlen_usec }}">
+{% else %}
+    CDF of burst length in microseconds: plot not available
+{% endif %}
+</div> <!-- burstlen_usec_plot -->
+
 {% endblock%} <!-- expt_info -->
