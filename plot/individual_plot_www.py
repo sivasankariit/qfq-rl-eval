@@ -24,12 +24,10 @@ def individual_plot(expt_dir = '', properties = set(), templateQDict = {}):
         return django.http.HttpResponse('No experiment directory specified.')
 
     # URLs of plots
-    uri_ipt = (reverse('expsift.views.home') + 'expt-logs/' +
-            expt_dir[len(expt_logs_dir):] + '/plot/ipt.png')
-    uri_burstlen_pkt = (reverse('expsift.views.home') + 'expt-logs/' +
-            expt_dir[len(expt_logs_dir):] + '/plot/burstlen_pkt.png')
-    uri_burstlen_usec = (reverse('expsift.views.home') + 'expt-logs/' +
-            expt_dir[len(expt_logs_dir):] + '/plot/burstlen_usec.png')
+    directory_url = templateQDict["directory_url"]
+    uri_ipt = directory_url + '/plot/ipt.png'
+    uri_burstlen_pkt = directory_url + '/plot/burstlen_pkt.png'
+    uri_burstlen_usec = directory_url + '/plot/burstlen_usec.png'
 
     templateQDict["uri_ipt"] = uri_ipt
     templateQDict["uri_burstlen_pkt"] = uri_burstlen_pkt
