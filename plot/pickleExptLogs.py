@@ -5,6 +5,7 @@ import os
 import random
 import sys
 import tarfile
+from plumbum.cmd import head
 
 from SnifferParser import SnifferParser
 
@@ -71,6 +72,10 @@ def pickleSnfFile(snf_file, pickle_dir, stats_dir, max_lines=100000):
     snf_stats_fd.write('--- Burst length in nanosecs (port_number, avg, pc99)---\n')
     snf_stats_fd.write('%s\n' % str(summary_burstlen_nsec))
     snf_stats_fd.close()
+
+    # Save first 20000 lines of sniffer file
+    snf_head_file = os.path.join(stats_dir, 'pkt_snf_head20000.txt')
+    (head['-n', '20000', snf_file] > snf_head_file)()
 
 
 def main(argv):
