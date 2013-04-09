@@ -1,13 +1,22 @@
 #!/usr/bin/env python
 
-import sys
-import os
+import argparse
 import boomslang
+import os
 import sys
 
 from SnifferParser import SnifferParser
 from pickleExptLogs import readPickledFile
 from expsiftUtils import readDirTagFileProperty
+
+
+parser = argparse.ArgumentParser(description='Plot sniffer data')
+parser.add_argument('expt_dir', help='Experiment directory')
+parser.add_argument('plotfile_prefix',
+                    help='Filename prefix for output graphs')
+parser.add_argument('--force_replot', '-f', dest='force_replot',
+                    help='Replot graphs even if they already exist ',
+                    action="store_true")
 
 
 def idealIptNsec(packet_len, rate_gbps):
@@ -168,25 +177,26 @@ def plotIpt(directory):
 
 
 def main(argv):
-
-    if len(argv) != 3:
-        print 'Usage: ', argv[0], 'expt_dir output_filename_prefix'
-        sys.exit(-1)
-
-    expt_dir = argv[1]
-    plotfile_prefix = argv[2]
+    # Parse flags
+    args = parser.parse_args()
 
     # Plot inter-packet arrival time in microseconds
-    ipt_plot = plotIpt(expt_dir)
-    ipt_plot.save(plotfile_prefix + 'ipt.png')
+    if (args.force_replot or
+        not os.path.exists(args.plotfile_prefix + 'ipt.png')):
+        ipt_plot = plotIpt(args.expt_dir)
+        ipt_plot.save(args.plotfile_prefix + 'ipt.png')
 
     # Plot burstlen in packets
-    burstlen_pkt_plot = plotBurstlenPkt(expt_dir)
-    burstlen_pkt_plot.save(plotfile_prefix + 'burstlen_pkt.png')
+    if (args.force_replot or
+        not os.path.exists(args.plotfile_prefix + 'burstlen_pkt.png')):
+        burstlen_pkt_plot = plotBurstlenPkt(args.expt_dir)
+        burstlen_pkt_plot.save(args.plotfile_prefix + 'burstlen_pkt.png')
 
     # Plot burstlen in microseconds
-    burstlen_usec_plot = plotBurstlenUsec(expt_dir)
-    burstlen_usec_plot.save(plotfile_prefix + 'burstlen_usec.png')
+    if (args.force_replot or
+        not os.path.exists(args.plotfile_prefix + 'burstlen_usec.png')):
+        burstlen_usec_plot = plotBurstlenUsec(args.expt_dir)
+        burstlen_usec_plot.save(args.plotfile_prefix + 'burstlen_usec.png')
 
 
 if __name__ == '__main__':
