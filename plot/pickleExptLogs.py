@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import cPickle
 import os
 import random
@@ -8,6 +9,27 @@ import tarfile
 from plumbum.cmd import head
 
 from SnifferParser import SnifferParser
+from MPStatParser import MPStatParser
+from EthstatsParser import EthstatsParser
+
+
+parser = argparse.ArgumentParser(description='Pickle experiment logs')
+parser.add_argument('expt_dir', help='Experiment directory')
+parser.add_argument('tmp_dir', help='Temp directory')
+parser.add_argument('-f', dest='force_rewrite',
+                    help='Repickle even if pickle file already exists',
+                    action="store_true")
+
+
+pickled_files = {'sniffer' : ['burstlen_pkt.txt',
+                              'burstlen_nsec.txt',
+                              'pkt_len_freq.txt'],
+                 'mpstat' : ['mpstat_p.txt'],
+                 'ethstats' : ['net_p.txt']}
+stats_files = {'sniffer' : ['snf_stats.txt',
+                            'pkt_snf_head20000.txt'],
+               'mpstat' : ['cpu_util.txt'],
+               'ethstats' : ['net_util.txt']}
 
 
 # Used to load data from a picked file to variables
@@ -78,39 +100,103 @@ def pickleSnfFile(snf_file, pickle_dir, stats_dir, max_lines=100000):
     (head['-n', '20000', snf_file] > snf_head_file)()
 
 
+def pickleMPStat(mpstat_file, pickle_dir, stats_dir):
+
+    # Parse the mpstat log file
+    mstats = MPStatParser(mpstat_file)
+
+    # Pickle CPU utilization data
+    mpstat_pfile = os.path.join(pickle_dir, 'mpstat_p.txt')
+    kernel_usage = mstats.kernel_usage()
+    summary = mstats.summary()
+    data = (kernel_usage, summary)
+    fd = open(mpstat_pfile, 'wb')
+    cPickle.dump(data, fd)
+    fd.close()
+
+    # Write stats about CPU utilization
+    cpu_stats_file = os.path.join(stats_dir, 'cpu_util.txt')
+    cpu_stats_fd = open(cpu_stats_file, 'w')
+    cpu_stats_fd.write('Kernel usage (average) = %s\n' % str(kernel_usage))
+    cpu_stats_fd.write('--- Average usage breakdown ---\n')
+    cpu_stats_fd.write(str(summary))
+    cpu_stats_fd.close()
+
+
+def pickleEthstats(ethstats_file, pickle_dir, stats_dir):
+
+    # Parse the mpstat log file
+    estats = EthstatsParser(ethstats_file)
+
+    # Pickle CPU utilization data
+    ethstats_pfile = os.path.join(pickle_dir, 'net_p.txt')
+    summary = estats.summary()
+    fd = open(ethstats_pfile, 'wb')
+    cPickle.dump(summary, fd)
+    fd.close()
+
+    # Write stats about network utilization
+    net_stats_file = os.path.join(stats_dir, 'net_util.txt')
+    net_stats_fd = open(net_stats_file, 'w')
+    net_stats_fd.write(str(summary))
+    net_stats_fd.close()
+
+
+def allFilesGenerated(category, pickle_dir, stats_dir):
+    res = True
+    for filename in pickled_files[category]:
+        filename = os.path.join(pickle_dir, filename)
+        if not os.path.exists(filename):
+            res = False
+    for filename in stats_files[category]:
+        filename = os.path.join(stats_dir, filename)
+        if not os.path.exists(filename):
+            res = False
+    return res
+
+
 def main(argv):
-
-    if len(argv) != 3:
-        print 'Usage: ', argv[0], 'expt_dir tmp_dir'
-        sys.exit(-1)
-
-    expt_dir = argv[1]
-    tmp_dir = argv[2]
+    # Parse flags
+    args = parser.parse_args()
 
     # Temp directory to extract the sniffer data and pickle it
-    snf_data_dir = os.path.join(tmp_dir, 'snf_data')
+    snf_data_dir = os.path.join(args.tmp_dir, 'snf_data')
     if not os.path.exists(snf_data_dir):
         os.makedirs(snf_data_dir)
 
     # Extract the sniffer data to the temp directory
-    snf_tarfile = os.path.join(expt_dir, 'logs/pkt_snf.tar.gz')
+    snf_tarfile = os.path.join(args.expt_dir, 'logs/pkt_snf.tar.gz')
     tar = tarfile.open(snf_tarfile)
     tar.extractall(snf_data_dir)
     tar.close()
 
     # Create directory for pickled files
-    pickle_dir = os.path.join(expt_dir, 'pickled')
+    pickle_dir = os.path.join(args.expt_dir, 'pickled')
     if not os.path.exists(pickle_dir):
         os.makedirs(pickle_dir)
 
     # Create directory for saving statistics
-    stats_dir = os.path.join(expt_dir, 'stats')
+    stats_dir = os.path.join(args.expt_dir, 'stats')
     if not os.path.exists(stats_dir):
         os.makedirs(stats_dir)
 
-    # Pickle sniffer data
-    pickleSnfFile(os.path.join(snf_data_dir, 'pkt_snf.txt'),
-                  pickle_dir, stats_dir, max_lines = 1000000)
+    # Pickle sniffer data if required
+    if (args.force_rewrite or
+        not allFilesGenerated('sniffer', pickle_dir, stats_dir)):
+        pickleSnfFile(os.path.join(snf_data_dir, 'pkt_snf.txt'),
+                      pickle_dir, stats_dir, max_lines = 1000000)
+
+    # Pickle mpstat data
+    if (args.force_rewrite or
+        not allFilesGenerated('mpstat', pickle_dir, stats_dir)):
+        pickleMPStat(os.path.join(args.expt_dir, 'logs/mpstat.txt'),
+                     pickle_dir, stats_dir)
+
+    # Pickle ethstats data
+    if (args.force_rewrite or
+        not allFilesGenerated('ethstats', pickle_dir, stats_dir)):
+        pickleEthstats(os.path.join(args.expt_dir, 'logs/net.txt'),
+                       pickle_dir, stats_dir)
 
 
 if __name__ == '__main__':
