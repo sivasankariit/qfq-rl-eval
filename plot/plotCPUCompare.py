@@ -53,6 +53,35 @@ def getKernelCPUUtil(directory):
     return kernel_usage
 
 
+# Returns the CPU comparison summary graph
+def plotCPUComparisonDirs(dir2props_dict = {}):
+    return plotComparisonDirs(
+            dir2props_dict,
+
+            subplot_props = ['rate_mbps'],
+            cluster_props = ['nclasses'],
+            trial_props = ['run'],
+
+            fn_sort_subplots = lambda subplots: sortRateValSets(subplots),
+            fn_sort_clusters = lambda clusters: sortNClassesValSets(clusters),
+            fn_sort_majorgroups = lambda majorgroups: majorgroups,
+
+            fn_get_subplot_title = (lambda rate_val_set:
+                'Rate: %s Gbps' %
+                (getRateMbpsFromPropValSet(rate_val_set) / 1000)),
+
+            fn_get_cluster_label = (lambda nclasses_val_set:
+                str(getNClassesFromPropValSet(nclasses_val_set))),
+
+            fn_get_majorgroup_label = (lambda sysconf, common_props:
+                getSysConfLabel(sysconf, common_props)),
+
+            fn_get_datapoint = lambda directory: getKernelCPUUtil(directory),
+
+            xLabel = 'Number of classes',
+            yLabel = 'Kernel CPU util. (%)')
+
+
 def main(argv):
     # Parse flags
     args = parser.parse_args()
@@ -79,32 +108,7 @@ def main(argv):
     dir2props_dict = getDir2PropsDict(expt_dirs)
 
     # Plot CPU comparison graph
-    cpu_plot_layout = plotComparisonDirs(
-            dir2props_dict,
-
-            subplot_props = ['rate_mbps'],
-            cluster_props = ['nclasses'],
-            trial_props = ['run'],
-
-            fn_sort_subplots = lambda subplots: sortRateValSets(subplots),
-            fn_sort_clusters = lambda clusters: sortNClassesValSets(clusters),
-            fn_sort_majorgroups = lambda majorgroups: majorgroups,
-
-            fn_get_subplot_title = (lambda rate_val_set:
-                'Rate: %s Gbps' %
-                (getRateMbpsFromPropValSet(rate_val_set) / 1000)),
-
-            fn_get_cluster_label = (lambda nclasses_val_set:
-                str(getNClassesFromPropValSet(nclasses_val_set))),
-
-            fn_get_majorgroup_label = (lambda sysconf, common_props:
-                getSysConfLabel(sysconf, common_props)),
-
-            fn_get_datapoint = lambda directory: getKernelCPUUtil(directory),
-
-            xLabel = 'Number of classes',
-            yLabel = 'Kernel CPU util. (%)')
-
+    cpu_plot_layout = plotCPUComparisonDirs(dir2props_dict)
     cpu_plot_layout.save(args.plot_filename)
 
 
