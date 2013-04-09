@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
 import argparse
-import boomslang
-import numpy
 import os
 import sys
 
 from MPStatParser import MPStatParser
 from pickleExptLogs import readPickledFile
 from expsiftUtils import *
+from plotCompare import plotComparisonDirs
 
 
 parser = argparse.ArgumentParser(description='Plot CPU comparison graph')
@@ -19,209 +18,39 @@ parser.add_argument('-r', dest='recursive', action='store_true',
                          'each specified directory')
 
 
-# Returns a boomslang ClusteredBars() object to which the specified Bars have
-# been added.
-def clusteredBarsGraph(bars, xTickLabels, spacing=0.5):
-    clusteredBars = boomslang.ClusteredBars()
-    clusteredBars.spacing = spacing
-    for bar in bars:
-        clusteredBars.add(bar)
-    clusteredBars.xTickLabels = xTickLabels
-    return clusteredBars
+def getRateMbpsFromPropValSet(rate_val_set):
+    # The rate_mbps=value string should be the only element in the set
+    rate_dict = getPropsDict(rate_val_set)
+    return int(rate_dict['rate_mbps'])
 
 
-# Returns a boomslang Bar() object with the specified parameters
-def barGraph(xValues, yValues, yErrors,
-             label='Bar', color='red', errorBarColor='black'):
-    bar = boomslang.Bar()
-    bar.xValues = xValues
-    bar.yValues = yValues
-    bar.yErrors = yErrors
-    bar.color = color
-    bar.errorBarColor = errorBarColor
-    bar.label = label
-    return bar
+def getNClassesFromPropValSet(nclasses_val_set):
+    # The nclasses=value string should be the only element in the set
+    nclasses_dict = getPropsDict(nclasses_val_set)
+    return int(nclasses_dict['nclasses'])
 
 
-def plotCPUDirs(dir2props_dict = {}):
-    # We plot multiple subplots - rate is fixed for any subplot
-    # We vary the number of classes within a subplot and plot separate bars for
-    # each set of unique properties, ie. a separate bargraph for each system
-    # config.
-    #
-    # Hierarchy:
-    # - rate_mbps: Separate clusterbar subplot for each
-    # - sysconf: Separate bargraph for each (eg. rl=htb, tso=on)
-    # - nclasses: Separate xTickLocation for each
+def sortRateValSets(rate_val_sets):
+    rate_val_sets.sort(key = lambda rate_val_set:
+                       getRateMbpsFromPropValSet(rate_val_set)),
 
 
-    # 1. Turn each directory's set of prop=val strings into a dictionary to
-    #     easily look up the value of a particular property for the directory
-    dir2prop2val_dict = getDir2Prop2ValDict(dir2props_dict)
+def sortNClassesValSets(nclasses_val_sets):
+    nclasses_val_sets.sort(key = lambda nclasses_val_set:
+                           getNClassesFromPropValSet(nclasses_val_set)),
 
 
-    # 2. Find all the common and unique properties among all directories
-    common_props, unique_props = getCommonAndUniqueProperties(dir2props_dict)
+def getSysConfLabel(sysconf, common_props):
+    sysconf_label_props = ((sysconf - common_props) |
+                           onlyIncludeProps(sysconf, 'rl'))
+    return ', '.join(sorted(sysconf_label_props))
 
 
-    # 3. Find all unique values of the 'rate_mbps' property.
-    rate2dir_dict = getDirGroupsByProperty(dir2props_dict, ['rate_mbps'],
-                                           ignore = False)
-    unique_rates = []
-    for rate_val_set in rate2dir_dict.iterkeys():
-        # The rate_mbps=value string should be the only element in the set
-        rate_dict = getPropsDict(rate_val_set)
-        rate_mbps = int(rate_dict['rate_mbps'])
-        unique_rates.append(rate_mbps)
-    unique_rates.sort()
-
-
-    # 4. Find all unique values of the 'nclasses' property.
-    nclasses2dir_dict = getDirGroupsByProperty(dir2props_dict, ['nclasses'],
-                                               ignore = False)
-    unique_nclasses = []
-    for nclasses_val_set in nclasses2dir_dict.iterkeys():
-        # The nclasses=value string should be the only element in the set
-        nclasses_dict = getPropsDict(nclasses_val_set)
-        nclasses = int(nclasses_dict['nclasses'])
-        unique_nclasses.append(nclasses)
-    unique_nclasses.sort()
-
-
-    # 5. Find all unique system configurations:
-    #    Ignore 'rate_mbps', 'nclasses', and 'run'. The other properties
-    #    constitute the system configuration.
-    #    Each sysconf is denoted by a frozenset of prop=val strings that are
-    #    unique to the sysconf
-    sysconf2dir_dict = getDirGroupsByProperty(dir2props_dict,
-                                              ['rate_mbps', 'nclasses', 'run'],
-                                               ignore = True)
-    unique_sysconf = sysconf2dir_dict.keys()
-
-
-    # 6A. Allocate a separate xValue in the graphs for each 'nclasses' value.
-    nclasses2xValue_dict = {}
-    for xValue in xrange(len(unique_nclasses)):
-        nclasses2xValue_dict[unique_nclasses[xValue]] = xValue
-
-
-    # 6B. Allocate a color for bar graphs of each sysconf
-    colors = ('y', 'g', 'c', 'r', 'm', 'b')
-    sysconf2color_dict = {}
-    for index, sysconf in enumerate(unique_sysconf):
-        sysconf2color_dict[sysconf] = colors[index % len(colors)]
-
-
-    # 7. Create an individual datapoints list:
-    #    for each unique rate,
-    #    for each unique sysconf,
-    #    for each unique nclasses
-    datapoints_dict = {}
-    for rate in unique_rates:
-        datapoints_dict[rate] = {}
-        for sysconf in unique_sysconf:
-            datapoints_dict[rate][sysconf] = {}
-            for nclasses in unique_nclasses:
-                datapoints_dict[rate][sysconf][nclasses] = []
-
-
-    # 8. Visit each directory and populate the corresponding datapoints list for
-    #    that directory
-    for directory, prop_vals in dir2props_dict.iteritems():
-        # Find the rate, sysconf and nclasses of the directory
-        rate = int(dir2prop2val_dict[directory]['rate_mbps'])
-        sysconf = removeIgnoredProps(prop_vals,
-                                     ['rate_mbps', 'nclasses', 'run'])
-        nclasses = int(dir2prop2val_dict[directory]['nclasses'])
-
-        # Read CPU utilization from the pickled file
-        mpstat_pfile = os.path.join(directory, 'pickled/mpstat_p.txt')
-        (kernel_usage, summary) = readPickledFile(mpstat_pfile)
-
-        # Add the data point (Kernel CPU usage)
-        datapoints_dict[rate][sysconf][nclasses].append(kernel_usage)
-
-
-    # 9. For each (rate, sysconf) combo, create a bar graph
-    all_bars_dict = {}
-    for rate, rate_dict in datapoints_dict.iteritems():
-        all_bars_dict[rate] = {}
-        for sysconf, sysconf_dict in rate_dict.iteritems():
-            sysconf_label_props = ((sysconf - common_props) |
-                                   onlyIncludeProps(sysconf, 'rl'))
-            sysconf_label = ', '.join(sorted(sysconf_label_props))
-            bar = barGraph([], [], [], color=sysconf2color_dict[sysconf],
-                           label=sysconf_label)
-            all_bars_dict[rate][sysconf] = bar
-
-
-    # 10. Compute average and stddev for each (rate, sysconf, nclasses)
-    #     combination. This represents the avg and stddev across multiple runs.
-    #     Add these to the corresponding bar graphs.
-    for rate, rate_dict in datapoints_dict.iteritems():
-        for sysconf, sysconf_dict in rate_dict.iteritems():
-            bar_values = []
-            for nclasses, datapoints in sysconf_dict.iteritems():
-                #sysconf_label_props = ((sysconf - common_props) |
-                #                        onlyIncludeProps(sysconf, 'rl'))
-                #print ('rate %d\t|| %s\t||\tnclasses %d\t|||| %s' % (rate,
-                #       ','.join(sorted(sysconf_label_props)),
-                #       nclasses, datapoints))
-                avg = numpy.average(datapoints)
-                stddev = numpy.std(datapoints)
-
-                # Append an (xValue, yValue, yError) tuple
-                bar_values.append((nclasses2xValue_dict[nclasses], avg, stddev))
-
-            # Sort the tuples by xValue and assign it to the bar graph.
-            # (Boomslang requires the values to be sorted)
-            bar = all_bars_dict[rate][sysconf]
-            bar_values.sort(key=lambda tup: tup[0])
-            # Unzip bar_values into individual lists
-            (bar.xValues, bar.yValues, bar.yErrors) = zip(*bar_values)
-
-
-    # 11. Create a clusteredBars Plot for each rate.
-    #     Place all the Plots in a single PlotLayout
-    layout = boomslang.PlotLayout()
-    for rate in datapoints_dict.iterkeys():
-        xLabel = 'Number of classes'
-        yLabel = 'Kernel CPU util. (%)'
-        title = 'Rate: %s Gbps' % (rate / 1000)
-
-        clusteredBars = clusteredBarsGraph(all_bars_dict[rate].values(),
-                                           unique_nclasses)
-
-        plot = boomslang.Plot()
-
-        # Add the clusteredbars for the particular rate
-        plot.add(clusteredBars)
-
-        # Set title and axes labels
-        plot.setXLabel(xLabel)
-        plot.setYLabel(yLabel)
-        plot.setTitle(title)
-        plot.hasLegend()
-
-        # Font size
-        plot.setLegendLabelSize("small")
-        plot.setTitleSize("small")
-        plot.setAxesLabelSize("small")
-        plot.setXTickLabelSize("small")
-        plot.setYTickLabelSize("small")
-
-        # Grid
-        plot.grid.color = "lightgray"
-        plot.grid.style = "dotted"
-        plot.grid.lineWidth = 0.8
-        plot.grid.visible = True
-
-        # Add the plot to the layout
-        layout.addPlot(plot)
-
-
-    # 12. Return the final PlotLayout with all the graphs
-    return layout
+def getKernelCPUUtil(directory):
+    # Read the mpstat pickle file and return the kernel CPU utilization
+    mpstat_pfile = os.path.join(directory, 'pickled/mpstat_p.txt')
+    (kernel_usage, summary) = readPickledFile(mpstat_pfile)
+    return kernel_usage
 
 
 def main(argv):
@@ -250,7 +79,32 @@ def main(argv):
     dir2props_dict = getDir2PropsDict(expt_dirs)
 
     # Plot CPU comparison graph
-    cpu_plot_layout = plotCPUDirs(dir2props_dict)
+    cpu_plot_layout = plotComparisonDirs(
+            dir2props_dict,
+
+            subplot_props = ['rate_mbps'],
+            cluster_props = ['nclasses'],
+            trial_props = ['run'],
+
+            fn_sort_subplots = lambda subplots: sortRateValSets(subplots),
+            fn_sort_clusters = lambda clusters: sortNClassesValSets(clusters),
+            fn_sort_majorgroups = lambda majorgroups: majorgroups,
+
+            fn_get_subplot_title = (lambda rate_val_set:
+                'Rate: %s Gbps' %
+                (getRateMbpsFromPropValSet(rate_val_set) / 1000)),
+
+            fn_get_cluster_label = (lambda nclasses_val_set:
+                str(getNClassesFromPropValSet(nclasses_val_set))),
+
+            fn_get_majorgroup_label = (lambda sysconf, common_props:
+                getSysConfLabel(sysconf, common_props)),
+
+            fn_get_datapoint = lambda directory: getKernelCPUUtil(directory),
+
+            xLabel = 'Number of classes',
+            yLabel = 'Kernel CPU util. (%)')
+
     cpu_plot_layout.save(args.plot_filename)
 
 
