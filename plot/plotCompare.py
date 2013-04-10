@@ -3,8 +3,6 @@ matplotlib.rcParams['backend'] = 'Agg'
 import boomslang
 import numpy
 
-from MPStatParser import MPStatParser
-from pickleExptLogs import readPickledFile
 from expsiftUtils import *
 
 

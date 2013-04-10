@@ -4,7 +4,6 @@ import argparse
 import os
 import sys
 
-from MPStatParser import MPStatParser
 from pickleExptLogs import readPickledFile
 from expsiftUtils import *
 from plotCompare import plotComparisonDirs
