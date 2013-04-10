@@ -7,6 +7,11 @@ import sys
 from pickleExptLogs import readPickledFile
 from expsiftUtils import *
 from plotCompare import plotComparisonDirs
+from plotCompare import getRateMbpsFromPropValSet
+from plotCompare import getNClassesFromPropValSet
+from plotCompare import sortRateValSets
+from plotCompare import sortNClassesValSets
+from plotCompare import getSysConfLabel
 
 
 parser = argparse.ArgumentParser(description='Plot CPU comparison graph')
@@ -15,34 +20,6 @@ parser.add_argument('plot_filename', help='Filename for the graph')
 parser.add_argument('-r', dest='recursive', action='store_true',
                     help='Recursively look for experiment directories under '
                          'each specified directory')
-
-
-def getRateMbpsFromPropValSet(rate_val_set):
-    # The rate_mbps=value string should be the only element in the set
-    rate_dict = getPropsDict(rate_val_set)
-    return int(rate_dict['rate_mbps'])
-
-
-def getNClassesFromPropValSet(nclasses_val_set):
-    # The nclasses=value string should be the only element in the set
-    nclasses_dict = getPropsDict(nclasses_val_set)
-    return int(nclasses_dict['nclasses'])
-
-
-def sortRateValSets(rate_val_sets):
-    rate_val_sets.sort(key = lambda rate_val_set:
-                       getRateMbpsFromPropValSet(rate_val_set)),
-
-
-def sortNClassesValSets(nclasses_val_sets):
-    nclasses_val_sets.sort(key = lambda nclasses_val_set:
-                           getNClassesFromPropValSet(nclasses_val_set)),
-
-
-def getSysConfLabel(sysconf, common_props):
-    sysconf_label_props = ((sysconf - common_props) |
-                           onlyIncludeProps(sysconf, 'rl'))
-    return ', '.join(sorted(sysconf_label_props))
 
 
 def getKernelCPUUtil(directory):

@@ -229,3 +229,36 @@ def plotComparisonDirs(dir2props_dict, # dict
 
     # 12. Return the final PlotLayout with all the graphs
     return layout
+
+
+###############################################################
+# Additional utility functions for plotting comparison graphs #
+###############################################################
+
+
+def getRateMbpsFromPropValSet(rate_val_set):
+    # The rate_mbps=value string should be the only element in the set
+    rate_dict = getPropsDict(rate_val_set)
+    return int(rate_dict['rate_mbps'])
+
+
+def getNClassesFromPropValSet(nclasses_val_set):
+    # The nclasses=value string should be the only element in the set
+    nclasses_dict = getPropsDict(nclasses_val_set)
+    return int(nclasses_dict['nclasses'])
+
+
+def sortRateValSets(rate_val_sets):
+    rate_val_sets.sort(key = lambda rate_val_set:
+                       getRateMbpsFromPropValSet(rate_val_set)),
+
+
+def sortNClassesValSets(nclasses_val_sets):
+    nclasses_val_sets.sort(key = lambda nclasses_val_set:
+                           getNClassesFromPropValSet(nclasses_val_set)),
+
+
+def getSysConfLabel(sysconf, common_props):
+    sysconf_label_props = ((sysconf - common_props) |
+                           onlyIncludeProps(sysconf, 'rl'))
+    return ', '.join(sorted(sysconf_label_props))
