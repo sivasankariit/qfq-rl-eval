@@ -15,7 +15,7 @@ from django.utils import http
 
 # This function returns the response for an individual experiment directory as a
 # Django HttpResponse object
-def individual_plot(expt_dir = '', properties = set(), templateQDict = {}):
+def individualPlot(expt_dir = '', properties = set(), templateQDict = {}):
 
     if not expt_dir:
         return django.http.HttpResponse('No experiment directory specified.')
