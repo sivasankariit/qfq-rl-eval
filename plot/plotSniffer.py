@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import argparse
+import matplotlib
+matplotlib.rcParams['backend'] = 'Agg'
 import boomslang
 import os
 import sys

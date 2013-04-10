@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.rcParams['backend'] = 'Agg'
 import boomslang
 import numpy
 
