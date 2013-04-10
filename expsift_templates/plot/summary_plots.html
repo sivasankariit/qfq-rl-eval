@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+     <title>RL - Summary comparison plots</title>
+</head>
+
+<body>
+
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.7.2.min.js">
+</script>
+
+<style type="text/css">
+    div.timing_info_container { overflow: hidden; }
+    div.timing_info_container { border: 1px dashed green; }
+    div.timing_info_container { margin: 10px; }
+    div.timing_info_container { padding: 10px; }
+
+    div.props_container { overflow: hidden; }
+    div.props_container { border: 1px dashed maroon; }
+    div.props_container { margin: 10px; }
+    div.props_container { padding: 10px; }
+
+    div.plot_container { overflow: hidden; }
+    div.plot_container { border: 1px dashed blue; }
+    div.plot_container { margin: 10px; }
+
+    #common_props_table {padding: 5px;}
+    td.prop {padding: 5px;}
+</style>
+
+
+
+
+
+<div id="wrapper" class="wrapper">
+
+
+
+
+
+<div id="timing_info_container" class="timing_info_container">
+<table> <tr><th align="left">Timing info</th></tr><tr>
+<td style="padding-right:10px">Total time = {{ time_total|floatformat:3 }}s</td>
+<td style="padding-right:10px">Plot generation = {{ time_plot|floatformat:3 }}s</td>
+<td style="padding-right:10px">Saving plots = {{ time_plot_save|floatformat:3 }}s</td>
+<td style="padding-right:10px">Image encoding = {{ time_img_encode|floatformat:3 }}s</td>
+</tr> </table>
+</div> <!-- timing_info_container -->
+
+
+
+
+
+<div id="common_props_container" class="props_container">
+<b>Common Properties:</b><br>
+<table id="common_props_table">
+{% for prop in common_props %}
+
+    {% if forloop.counter0|divisibleby:common_props_cols %}
+    <tr>
+    {% endif %}
+
+    <td class="prop">{{ prop }}</td>
+
+    {% if forloop.counter0|add:1|divisibleby:common_props_cols %}
+    </tr>
+    {% endif %}
+
+{% endfor %}
+</table>
+</div> <!-- common_props_container -->
+
+
+
+
+
+<div id="cpu_plot_container" class="plot_container">
+{% if uri_cpu %}
+    <img id="cpu_plot_png" alt = "CPU utilization summary graph"
+     src = "{{ uri_cpu }}">
+{% else %}
+    CPU utilization summary plot not available
+{% endif %}
+</div> <!-- cpu_plot_container -->
+
+
+
+
+
+</div> <!-- wrapper -->
+
+</body>
+</html>
