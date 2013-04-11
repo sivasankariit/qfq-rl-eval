@@ -36,7 +36,11 @@ def summaryPlot(dir2props_dict = {}):
     start_time = datetime.now()
 
     # Generate the CPU comparison plot
-    _, _, _, _, plot_cpu = plotCPUComparisonDirs(dir2props_dict)
+    (subplot_titles,
+     majorgroup_labels,
+     cluster_labels,
+     clusterdir_dict,
+     plot_cpu) = plotCPUComparisonDirs(dir2props_dict)
 
     end_time_plot = datetime.now()
 
@@ -67,11 +71,42 @@ def summaryPlot(dir2props_dict = {}):
     else:
         common_props_cols = 1
 
+    def directoryActualUrl(directory):
+        expt_logs_conf = getattr(settings, 'EXPT_LOGS', {})
+        expt_logs_dir = expt_logs_conf['directory']
+        return (reverse('expsift.views.home') +
+                'expt-logs/' +  directory[len(expt_logs_dir):])
+
+    def directoryExptPageUrl(directory):
+        return (reverse('expsift.views.individual_expt_base') + '?' +
+                http.urlencode({'directory' : directory}, True))
+
+    def directoryUrl(directory):
+        if getattr(settings, 'ENABLE_INDIVIDUAL_EXPT_PAGE', False):
+            return directoryExptPageUrl(directory)
+        else:
+            return directoryActualUrl(directory)
+
+    # Compute the URLs for experiment directories
+    clusterdir_url_dict = {}
+    for s_title, subplot_dict in clusterdir_dict.iteritems():
+        clusterdir_url_dict[s_title] = {}
+        for m_label, majorgroup_dict in subplot_dict.iteritems():
+            clusterdir_url_dict[s_title][m_label] = {}
+            for c_label, directories in majorgroup_dict.iteritems():
+                clusterdir_url_dict[s_title][m_label][c_label] = (
+                        [ (dir, directoryUrl(dir)) for dir in directories ])
+
     # Render plots to HttpResponse and return it
     templateQDict = {'uri_cpu' : uri_cpu}
 
     templateQDict['common_props'] = common_props_sorted
     templateQDict['common_props_cols'] = common_props_cols
+
+    templateQDict['subplot_titles'] = subplot_titles
+    templateQDict['majorgroup_labels'] = majorgroup_labels
+    templateQDict['cluster_labels'] = cluster_labels
+    templateQDict['clusterdir_url_dict'] = clusterdir_url_dict
 
     end_time = datetime.now()
 

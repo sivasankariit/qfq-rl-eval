@@ -1,3 +1,5 @@
+{% load expsift_custom_filters %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +10,42 @@
 
 <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.2.min.js">
 </script>
+
+{% if subplot_titles and majorgroup_labels and cluster_labels and clusterdir_url_dict %}
+<script type="text/javascript">
+
+    var centerFunc = function() {
+        $(".plot").each(function() {
+            var plot_id = "#" + $(this).attr("id");
+            var container_id = plot_id + "_container";
+            var legend_id = plot_id + "_legend";
+            var png_id = plot_id + "_png";
+
+            var parentHeight = $(container_id).height();
+            var legendHeight = $(legend_id).height();
+            var plotHeight = $(plot_id).height();
+            $(plot_id).css("margin-top", (parentHeight - plotHeight) / 2);
+            $(legend_id).css("margin-top", (parentHeight - legendHeight) / 2);
+        });
+    };
+
+    $(document).ready(function() {
+
+        centerFunc();
+
+        $(".plot").each(function() {
+            var plot_id = "#" + $(this).attr("id");
+            var container_id = plot_id + "_container";
+            var legend_id = plot_id + "_legend";
+            var png_id = plot_id + "_png";
+            $(png_id).load(function() {
+                centerFunc();
+            });
+        });
+    });
+
+</script>
+{% endif %}
 
 <style type="text/css">
     div.timing_info_container { overflow: hidden; }
@@ -23,6 +61,18 @@
     div.plot_container { overflow: hidden; }
     div.plot_container { border: 1px dashed blue; }
     div.plot_container { margin: 10px; }
+{% if subplot_titles and majorgroup_labels and cluster_labels and clusterdir_url_dict %}
+    div.plot { float:left; }
+    div.plot { padding: 10px; }
+    div.plot { overflow: hidden; }
+    {# div.plot { border: 1px dashed red; } #}
+
+    {# div.legend { float:left; } #}
+    div.legend { overflow: hidden; }
+    div.legend { margin: 2px; }
+    div.legend { padding: 10px; }
+    div.legend { border: 1px solid black; }
+{% endif %}
 
     #common_props_table {padding: 5px;}
     td.prop {padding: 5px;}
@@ -75,11 +125,33 @@
 
 
 <div id="cpu_plot_container" class="plot_container">
+<div id="cpu_plot" class="plot">
 {% if uri_cpu %}
     <img id="cpu_plot_png" alt = "CPU utilization summary graph"
      src = "{{ uri_cpu }}">
 {% else %}
     CPU utilization summary plot not available
+{% endif %}
+</div>
+
+{% if subplot_titles and majorgroup_labels and cluster_labels and clusterdir_url_dict %}
+    <div id="cpu_plot_legend" class="legend">
+    {% for s_title in subplot_titles %}
+    {% for c_label in cluster_labels %}
+        <b>{{ s_title }} : {{ c_label }} classes</b><br>
+        {% for m_label in majorgroup_labels %}
+            {{ m_label }} :
+            {% with dir_urls=clusterdir_url_dict|get_item:s_title|get_item:m_label|get_item:c_label %}
+            {% for dir, dir_url in dir_urls %}
+                <a href="{{ dir_url }}">Trial {{ forloop.counter }}</a>,
+            {% endfor %}
+            {% endwith %}
+            <br>
+        {% endfor %}
+    {% endfor %}
+        <br>
+    {% endfor %}
+    </div>
 {% endif %}
 </div> <!-- cpu_plot_container -->
 
