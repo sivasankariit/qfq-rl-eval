@@ -84,7 +84,7 @@ def main(argv):
     dir2props_dict = getDir2PropsDict(expt_dirs)
 
     # Plot CPU comparison graph
-    cpu_plot_layout = plotCPUComparisonDirs(dir2props_dict)
+    _, _, _, _, cpu_plot_layout = plotCPUComparisonDirs(dir2props_dict)
     cpu_plot_layout.save(args.plot_filename)
 
 

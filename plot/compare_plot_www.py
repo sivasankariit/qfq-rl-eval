@@ -36,7 +36,7 @@ def summaryPlot(dir2props_dict = {}):
     start_time = datetime.now()
 
     # Generate the CPU comparison plot
-    plot_cpu = plotCPUComparisonDirs(dir2props_dict)
+    _, _, _, _, plot_cpu = plotCPUComparisonDirs(dir2props_dict)
 
     end_time_plot = datetime.now()
 

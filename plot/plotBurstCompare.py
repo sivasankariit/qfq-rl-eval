@@ -89,7 +89,8 @@ def main(argv):
     dir2props_dict = getDir2PropsDict(expt_dirs)
 
     # Plot burstlen_pkt comparison graph
-    burstlen_pkt_plot_layout = plotAvgBurstLenPktComparisonDirs(dir2props_dict)
+    _, _, _, _, burstlen_pkt_plot_layout = (
+            plotAvgBurstLenPktComparisonDirs(dir2props_dict))
     burstlen_pkt_plot_layout.save(args.plotfile_prefix +
                                   'compare_burstlen_pkt.png')
 

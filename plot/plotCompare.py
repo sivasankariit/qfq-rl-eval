@@ -54,7 +54,16 @@ def barGraph(xValues, yValues, yErrors,
 # majorgroup. Each majorgroup is denoted by a frozenset of prop=val strings that
 # are unique to the majorgroup.
 #
-# Returns a PlotLayout with multiple subplots
+# Returns a tuple: (unique_subplot_titles,
+#                   unique_majorgroup_labels,
+#                   unique_cluster_labels,
+#                   clusterdir_dict,
+#                   PlotLayout)
+# - unique_subplot_titles, unique_majorgroup_labels, unique_cluster_labels are
+#   sorted in the order used for the actual graphs.
+# - clusterdir_dict indicates the directory grouping that was actually used to
+#   plot the graph.
+# - PlotLayout is the actual graph with multiple subplots.
 def plotComparisonDirs(dir2props_dict, # dict
                        subplot_props,  # list
                        cluster_props,  # list
@@ -90,7 +99,7 @@ def plotComparisonDirs(dir2props_dict, # dict
     cluster2dir_dict = getDirGroupsByProperty(dir2props_dict, cluster_props,
                                               ignore = False)
     unique_clusters = cluster2dir_dict.keys()
-    # 3B. Sort the clusters
+    # 4B. Sort the clusters
     fn_sort_clusters(unique_clusters)
 
 
@@ -125,21 +134,28 @@ def plotComparisonDirs(dir2props_dict, # dict
         majorgroup2color_dict[majorgroup] = colors[index % len(colors)]
 
 
-    # 7. Create an individual datapoints list:
-    #    for each unique subplot,
-    #    for each unique majorgroup,
-    #    for each unique cluster.
+    # 7. For each unique subplot,
+    #    For each unique majorgroup,
+    #    For each unique cluster:
+    #        Create an individual datapoints list
+    #        Create a list of experiment directories (for this dictionary we
+    #        index by subplot titles, majorgroup labels, and cluster labels)
+    #        TODO(siva): remove above comment. We only do it at the end
     datapoints_dict = {}
+    clusterdir_dict = {}
     for subplot in unique_subplots:
         datapoints_dict[subplot] = {}
+        clusterdir_dict[subplot] = {}
         for majorgroup in unique_majorgroups:
             datapoints_dict[subplot][majorgroup] = {}
+            clusterdir_dict[subplot][majorgroup] = {}
             for cluster in unique_clusters:
                 datapoints_dict[subplot][majorgroup][cluster] = []
+                clusterdir_dict[subplot][majorgroup][cluster] = []
 
 
     # 8. Visit each directory and populate the corresponding datapoints list for
-    #    that directory
+    #    that directory. Also populate the directory in the clusterdir_dict.
     for directory, prop_vals in dir2props_dict.iteritems():
         # Find the subplot, majorgroup, and cluster of the directory
         subplot = onlyIncludeProps(prop_vals, subplot_props)
@@ -152,6 +168,9 @@ def plotComparisonDirs(dir2props_dict, # dict
 
         # Add the data point
         datapoints_dict[subplot][majorgroup][cluster].append(datapoint)
+
+        # Add directory to the clusterdir_dict
+        clusterdir_dict[subplot][majorgroup][cluster].append(directory)
 
 
     # 9. For each (subplot, majorgroup) combo, create a bar graph
@@ -227,8 +246,32 @@ def plotComparisonDirs(dir2props_dict, # dict
         layout.addPlot(plot)
 
 
-    # 12. Return the final PlotLayout with all the graphs
-    return layout
+    # 12. Update the clusterdir_dict to be index by subplot title, majorgroup
+    # labels, and cluster labels.
+    unique_subplot_titles = [ fn_get_subplot_title(subplot)
+                              for subplot in unique_subplots ]
+    unique_majorgroup_labels = [ fn_get_majorgroup_label(majorgroup,
+                                                         common_props)
+                                 for majorgroup in unique_majorgroups ]
+
+    label_clusterdir_dict = {}
+    for i, subplot in enumerate(unique_subplots):
+        s_title = unique_subplot_titles[i]
+        label_clusterdir_dict[s_title] = {}
+
+        for j, majorgroup in enumerate(unique_majorgroups):
+            m_label = unique_majorgroup_labels[j]
+            label_clusterdir_dict[s_title][m_label] = {}
+
+            for k, cluster in enumerate(unique_clusters):
+                c_label = unique_cluster_labels[k]
+                label_clusterdir_dict[s_title][m_label][c_label] = (
+                        clusterdir_dict[subplot][majorgroup][cluster])
+
+
+    # 13. Return the final PlotLayout and other results
+    return (unique_subplot_titles, unique_majorgroup_labels,
+            unique_cluster_labels, label_clusterdir_dict, layout)
 
 
 ###############################################################
