@@ -89,7 +89,10 @@ def plotCDFGraphSimple(cdf_data, avg_data, pc99_data,
 def plotBurstlenPkt(directory):
     # Read burst lengths from the sniffer pickled files
     burstlen_pkt_pfile = os.path.join(directory, 'pickled/burstlen_pkt.txt')
-    (burstlen_pkt, summary) = readPickledFile(burstlen_pkt_pfile)
+    burstlen_pkt_summary_pfile = os.path.join(
+            directory, 'pickled/burstlen_pkt_summary.txt')
+    burstlen_pkt = readPickledFile(burstlen_pkt_pfile)
+    summary = readPickledFile(burstlen_pkt_summary_pfile)
     ports = summary.keys()
 
     cdf_data = []
@@ -112,7 +115,10 @@ def plotBurstlenPkt(directory):
 def plotBurstlenUsec(directory):
     # Read burst lengths from the sniffer pickled files
     burstlen_nsec_pfile = os.path.join(directory, 'pickled/burstlen_nsec.txt')
-    (burstlen_nsec, summary) = readPickledFile(burstlen_nsec_pfile)
+    burstlen_nsec_summary_pfile = os.path.join(
+            directory, 'pickled/burstlen_nsec_summary.txt')
+    burstlen_nsec = readPickledFile(burstlen_nsec_pfile)
+    summary = readPickledFile(burstlen_nsec_summary_pfile)
     ports = summary.keys()
 
     cdf_data = []
@@ -136,7 +142,9 @@ def plotBurstlenUsec(directory):
 def plotIpt(directory):
     # Read inter-packet arrival times from the sniffer pickled files
     ipt_pfile = os.path.join(directory, 'pickled/ipt.txt')
-    (ipt, summary) = readPickledFile(ipt_pfile)
+    ipt_summary_pfile = os.path.join(directory, 'pickled/ipt_summary.txt')
+    ipt = readPickledFile(ipt_pfile)
+    summary = readPickledFile(ipt_summary_pfile)
     ports = summary.keys()
 
     # Read packet lengths from sniffer pickled files

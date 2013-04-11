@@ -22,7 +22,11 @@ parser.add_argument('-f', dest='force_rewrite',
 
 
 pickled_files = {'sniffer' : ['burstlen_pkt.txt',
+                              'burstlen_pkt_summary.txt',
                               'burstlen_nsec.txt',
+                              'burstlen_nsec_summary.txt',
+                              'ipt.txt',
+                              'ipt_summary.txt',
                               'pkt_len_freq.txt'],
                  'mpstat' : ['mpstat_p.txt'],
                  'ethstats' : ['net_p.txt']}
@@ -46,30 +50,43 @@ def pickleSnfFile(snf_file, pickle_dir, stats_dir, max_lines=100000):
     sniff = SnifferParser(snf_file, max_lines=max_lines)
 
     # Pickle burstlen_pkt data
+    # Pickle the actual data and summary separately
     burstlen_pkt_pfile = os.path.join(pickle_dir, 'burstlen_pkt.txt')
+    burstlen_pkt_summary_pfile = os.path.join(pickle_dir,
+                                              'burstlen_pkt_summary.txt')
     burstlen_pkt = sniff.get_burstlen_pkt()
     summary_burstlen_pkt = sniff.summary_burstlen_pkt()
-    data = (burstlen_pkt, summary_burstlen_pkt)
     fd = open(burstlen_pkt_pfile, 'wb')
-    cPickle.dump(data, fd)
+    cPickle.dump(burstlen_pkt, fd)
+    fd.close()
+    fd = open(burstlen_pkt_summary_pfile, 'wb')
+    cPickle.dump(summary_burstlen_pkt, fd)
     fd.close()
 
     # Pickle burstlen_nsec data
+    # Pickle the actual data and summary separately
     burstlen_nsec_pfile = os.path.join(pickle_dir, 'burstlen_nsec.txt')
+    burstlen_nsec_summary_pfile = os.path.join(pickle_dir,
+                                               'burstlen_nsec_summary.txt')
     burstlen_nsec = sniff.get_burstlen_nsec()
     summary_burstlen_nsec = sniff.summary_burstlen_nsec()
-    data = (burstlen_nsec, summary_burstlen_nsec)
     fd = open(burstlen_nsec_pfile, 'wb')
-    cPickle.dump(data, fd)
+    cPickle.dump(burstlen_nsec, fd)
+    fd.close()
+    fd = open(burstlen_nsec_summary_pfile, 'wb')
+    cPickle.dump(summary_burstlen_nsec, fd)
     fd.close()
 
     # Pickle inter-packet arrival time data
     ipt_pfile = os.path.join(pickle_dir, 'ipt.txt')
+    ipt_summary_pfile = os.path.join(pickle_dir, 'ipt_summary.txt')
     ipt = sniff.get_ipt()
     summary_ipt = sniff.summary_ipt()
-    data = (ipt, summary_ipt)
     fd = open(ipt_pfile, 'wb')
-    cPickle.dump(data, fd)
+    cPickle.dump(ipt, fd)
+    fd.close()
+    fd = open(ipt_summary_pfile, 'wb')
+    cPickle.dump(summary_ipt, fd)
     fd.close()
 
     # Pickle packet length data

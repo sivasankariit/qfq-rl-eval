@@ -26,8 +26,9 @@ parser.add_argument('-r', dest='recursive', action='store_true',
 def getAvgBurstLenPkt(directory):
     # Read the sniffer pickle file and return the average burst length in
     # packets
-    burstlen_pkt_pfile = os.path.join(directory, 'pickled/burstlen_pkt.txt')
-    (burstlen_pkt, summary) = readPickledFile(burstlen_pkt_pfile)
+    burstlen_pkt_summary_pfile = os.path.join(
+            directory, 'pickled/burstlen_pkt_summary.txt')
+    summary = readPickledFile(burstlen_pkt_summary_pfile)
     avg_burstlen = numpy.average(map(lambda port: summary[port][0],
                                      summary.keys()))
     return avg_burstlen
