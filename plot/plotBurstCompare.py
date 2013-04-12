@@ -34,6 +34,17 @@ def getAvgBurstLenPkt(directory):
     return avg_burstlen
 
 
+def getAvgBurstLenUsec(directory):
+    # Read the sniffer pickle file and return the average burst length in
+    # usecs (convert from nsecs)
+    burstlen_nsec_summary_pfile = os.path.join(
+            directory, 'pickled/burstlen_nsec_summary.txt')
+    summary = readPickledFile(burstlen_nsec_summary_pfile)
+    avg_burstlen = (numpy.average(map(lambda port: summary[port][0],
+                                      summary.keys())) / 1000.0)
+    return avg_burstlen
+
+
 # Returns the "avg burstlen in pkts" comparison summary graph
 def plotAvgBurstLenPktComparisonDirs(dir2props_dict = {}):
     return plotComparisonDirs(
@@ -43,8 +54,8 @@ def plotAvgBurstLenPktComparisonDirs(dir2props_dict = {}):
             cluster_props = ['nclasses'],
             trial_props = ['run'],
 
-            fn_sort_subplots = lambda subplots: sortRateValSets(subplots),
-            fn_sort_clusters = lambda clusters: sortNClassesValSets(clusters),
+            fn_sort_subplots = sortRateValSets,
+            fn_sort_clusters = sortNClassesValSets,
             fn_sort_majorgroups = lambda majorgroups: majorgroups,
 
             fn_get_subplot_title = (lambda rate_val_set:
@@ -54,13 +65,40 @@ def plotAvgBurstLenPktComparisonDirs(dir2props_dict = {}):
             fn_get_cluster_label = (lambda nclasses_val_set:
                 str(getNClassesFromPropValSet(nclasses_val_set))),
 
-            fn_get_majorgroup_label = (lambda sysconf, common_props:
-                getSysConfLabel(sysconf, common_props)),
+            fn_get_majorgroup_label = getSysConfLabel,
 
-            fn_get_datapoint = lambda directory: getAvgBurstLenPkt(directory),
+            fn_get_datapoint = getAvgBurstLenPkt,
 
             xLabel = 'Number of classes',
-            yLabel = 'Burst length (packets)')
+            yLabel = 'Avg. burst length (packets)')
+
+
+# Returns the "avg burstlen in usecs" comparison summary graph
+def plotAvgBurstLenUsecComparisonDirs(dir2props_dict = {}):
+    return plotComparisonDirs(
+            dir2props_dict,
+
+            subplot_props = ['rate_mbps'],
+            cluster_props = ['nclasses'],
+            trial_props = ['run'],
+
+            fn_sort_subplots = sortRateValSets,
+            fn_sort_clusters = sortNClassesValSets,
+            fn_sort_majorgroups = lambda majorgroups: majorgroups,
+
+            fn_get_subplot_title = (lambda rate_val_set:
+                'Rate: %s Gbps' %
+                (getRateMbpsFromPropValSet(rate_val_set) / 1000)),
+
+            fn_get_cluster_label = (lambda nclasses_val_set:
+                str(getNClassesFromPropValSet(nclasses_val_set))),
+
+            fn_get_majorgroup_label = getSysConfLabel,
+
+            fn_get_datapoint = getAvgBurstLenUsec,
+
+            xLabel = 'Number of classes',
+            yLabel = 'Avg. burst length (usecs)')
 
 
 def main(argv):
@@ -93,6 +131,12 @@ def main(argv):
             plotAvgBurstLenPktComparisonDirs(dir2props_dict))
     burstlen_pkt_plot_layout.save(args.plotfile_prefix +
                                   'compare_burstlen_pkt.png')
+
+    # Plot burstlen_usec comparison graph
+    _, _, _, _, burstlen_usec_plot_layout = (
+            plotAvgBurstLenUsecComparisonDirs(dir2props_dict))
+    burstlen_usec_plot_layout.save(args.plotfile_prefix +
+                                   'compare_burstlen_usec.png')
 
 
 if __name__ == '__main__':
