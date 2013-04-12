@@ -16,6 +16,8 @@ from django.utils import http
 
 from expsiftUtils import getCommonAndUniqueProperties
 from plotCPUCompare import plotCPUComparisonDirs
+from plotBurstCompare import plotAvgBurstLenPktComparisonDirs
+from plotBurstCompare import plotAvgBurstLenUsecComparisonDirs
 
 
 def getTimeDeltaSeconds(delta = timedelta(0)):
@@ -42,6 +44,14 @@ def summaryPlot(dir2props_dict = {}):
      clusterdir_dict,
      plot_cpu) = plotCPUComparisonDirs(dir2props_dict)
 
+    # Generate the burst length in packets comparison plot
+    (_, _, _, _,
+     plot_burstlen_pkt) = plotAvgBurstLenPktComparisonDirs(dir2props_dict)
+
+    # Generate the burst length in usecs comparison plot
+    (_, _, _, _,
+     plot_burstlen_usec) = plotAvgBurstLenUsecComparisonDirs(dir2props_dict)
+
     end_time_plot = datetime.now()
 
     # Save the plots as base64 strings
@@ -49,10 +59,22 @@ def summaryPlot(dir2props_dict = {}):
     plot_cpu.save(imgdata_cpu, format='png')
     imgdata_cpu.seek(0)  # rewind the data
 
+    imgdata_burstlen_pkt = StringIO.StringIO()
+    plot_burstlen_pkt.save(imgdata_burstlen_pkt, format='png')
+    imgdata_burstlen_pkt.seek(0)  # rewind the data
+
+    imgdata_burstlen_usec = StringIO.StringIO()
+    plot_burstlen_usec.save(imgdata_burstlen_usec, format='png')
+    imgdata_burstlen_usec.seek(0)  # rewind the data
+
     end_time_plot_save = datetime.now()
 
     uri_cpu = ('data:image/png;base64,' +
                http.urlquote(base64.b64encode(imgdata_cpu.buf)))
+    uri_burstlen_pkt = ('data:image/png;base64,' +
+               http.urlquote(base64.b64encode(imgdata_burstlen_pkt.buf)))
+    uri_burstlen_usec = ('data:image/png;base64,' +
+               http.urlquote(base64.b64encode(imgdata_burstlen_usec.buf)))
 
     end_time_img_encode = datetime.now()
 
@@ -99,6 +121,8 @@ def summaryPlot(dir2props_dict = {}):
 
     # Render plots to HttpResponse and return it
     templateQDict = {'uri_cpu' : uri_cpu}
+    templateQDict['uri_burstlen_pkt'] = uri_burstlen_pkt
+    templateQDict['uri_burstlen_usec'] = uri_burstlen_usec
 
     templateQDict['common_props'] = common_props_sorted
     templateQDict['common_props_cols'] = common_props_cols

@@ -159,6 +159,76 @@
 
 
 
+<div id="burstlen_pkt_plot_container" class="plot_container">
+<div id="burstlen_pkt_plot" class="plot">
+{% if uri_burstlen_pkt %}
+    <img id="burstlen_pkt_plot_png" alt = "Burst length in packets summary graph"
+     src = "{{ uri_burstlen_pkt }}">
+{% else %}
+    Burst length in packets summary plot not available
+{% endif %}
+</div>
+
+{% if subplot_titles and majorgroup_labels and cluster_labels and clusterdir_url_dict %}
+    <div id="burstlen_pkt_plot_legend" class="legend">
+    {% for s_title in subplot_titles %}
+    {% for c_label in cluster_labels %}
+        <b>{{ s_title }} : {{ c_label }} classes</b><br>
+        {% for m_label in majorgroup_labels %}
+            {{ m_label }} :
+            {% with dir_urls=clusterdir_url_dict|get_item:s_title|get_item:m_label|get_item:c_label %}
+            {% for dir, dir_url in dir_urls %}
+                <a href="{{ dir_url }}">Trial {{ forloop.counter }}</a>,
+            {% endfor %}
+            {% endwith %}
+            <br>
+        {% endfor %}
+    {% endfor %}
+        <br>
+    {% endfor %}
+    </div>
+{% endif %}
+</div> <!-- burstlen_pkt_plot_container -->
+
+
+
+
+
+<div id="burstlen_usec_plot_container" class="plot_container">
+<div id="burstlen_usec_plot" class="plot">
+{% if uri_burstlen_usec %}
+    <img id="burstlen_usec_plot_png" alt = "Burst length in packets summary graph"
+     src = "{{ uri_burstlen_usec }}">
+{% else %}
+    Burst length in packets summary plot not available
+{% endif %}
+</div>
+
+{% if subplot_titles and majorgroup_labels and cluster_labels and clusterdir_url_dict %}
+    <div id="burstlen_usec_plot_legend" class="legend">
+    {% for s_title in subplot_titles %}
+    {% for c_label in cluster_labels %}
+        <b>{{ s_title }} : {{ c_label }} classes</b><br>
+        {% for m_label in majorgroup_labels %}
+            {{ m_label }} :
+            {% with dir_urls=clusterdir_url_dict|get_item:s_title|get_item:m_label|get_item:c_label %}
+            {% for dir, dir_url in dir_urls %}
+                <a href="{{ dir_url }}">Trial {{ forloop.counter }}</a>,
+            {% endfor %}
+            {% endwith %}
+            <br>
+        {% endfor %}
+    {% endfor %}
+        <br>
+    {% endfor %}
+    </div>
+{% endif %}
+</div> <!-- burstlen_usec_plot_container -->
+
+
+
+
+
 </div> <!-- wrapper -->
 
 </body>
