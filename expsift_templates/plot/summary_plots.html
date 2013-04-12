@@ -128,7 +128,7 @@
 <div id="cpu_plot" class="plot">
 {% if uri_cpu %}
     <img id="cpu_plot_png" alt = "CPU utilization summary graph"
-     src = "{{ uri_cpu }}">
+     src = "{{ uri_cpu }}" height = "800px">
 {% else %}
     CPU utilization summary plot not available
 {% endif %}
@@ -143,7 +143,7 @@
             {{ m_label }} :
             {% with dir_urls=clusterdir_url_dict|get_item:s_title|get_item:m_label|get_item:c_label %}
             {% for dir, dir_url in dir_urls %}
-                <a href="{{ dir_url }}">Trial {{ forloop.counter }}</a>,
+                <a href="{{ dir_url }}">{{ forloop.counter }}</a>,
             {% endfor %}
             {% endwith %}
             <br>
@@ -163,7 +163,7 @@
 <div id="burstlen_pkt_plot" class="plot">
 {% if uri_burstlen_pkt %}
     <img id="burstlen_pkt_plot_png" alt = "Burst length in packets summary graph"
-     src = "{{ uri_burstlen_pkt }}">
+     src = "{{ uri_burstlen_pkt }}" height = "800px">
 {% else %}
     Burst length in packets summary plot not available
 {% endif %}
@@ -178,7 +178,7 @@
             {{ m_label }} :
             {% with dir_urls=clusterdir_url_dict|get_item:s_title|get_item:m_label|get_item:c_label %}
             {% for dir, dir_url in dir_urls %}
-                <a href="{{ dir_url }}">Trial {{ forloop.counter }}</a>,
+                <a href="{{ dir_url }}">{{ forloop.counter }}</a>,
             {% endfor %}
             {% endwith %}
             <br>
@@ -198,7 +198,7 @@
 <div id="burstlen_usec_plot" class="plot">
 {% if uri_burstlen_usec %}
     <img id="burstlen_usec_plot_png" alt = "Burst length in packets summary graph"
-     src = "{{ uri_burstlen_usec }}">
+     src = "{{ uri_burstlen_usec }}" height = "800px">
 {% else %}
     Burst length in packets summary plot not available
 {% endif %}
@@ -213,7 +213,7 @@
             {{ m_label }} :
             {% with dir_urls=clusterdir_url_dict|get_item:s_title|get_item:m_label|get_item:c_label %}
             {% for dir, dir_url in dir_urls %}
-                <a href="{{ dir_url }}">Trial {{ forloop.counter }}</a>,
+                <a href="{{ dir_url }}">{{ forloop.counter }}</a>,
             {% endfor %}
             {% endwith %}
             <br>
