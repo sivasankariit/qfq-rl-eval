@@ -138,9 +138,7 @@ def plotComparisonDirs(dir2props_dict, # dict
     #    For each unique majorgroup,
     #    For each unique cluster:
     #        Create an individual datapoints list
-    #        Create a list of experiment directories (for this dictionary we
-    #        index by subplot titles, majorgroup labels, and cluster labels)
-    #        TODO(siva): remove above comment. We only do it at the end
+    #        Create a list of experiment directories
     datapoints_dict = {}
     clusterdir_dict = {}
     for subplot in unique_subplots:
@@ -243,7 +241,7 @@ def plotComparisonDirs(dir2props_dict, # dict
         plot.grid.visible = True
 
         # Add the plot to the layout
-        layout.addPlot(plot)
+        layout.addPlot(plot, grouping=title)
 
 
     # 12. Update the clusterdir_dict to be index by subplot title, majorgroup
@@ -269,7 +267,11 @@ def plotComparisonDirs(dir2props_dict, # dict
                         clusterdir_dict[subplot][majorgroup][cluster])
 
 
-    # 13. Return the final PlotLayout and other results
+    # 13. Set the order of subplots in the layout
+    layout.setGroupOrder(unique_subplot_titles)
+
+
+    # 14. Return the final PlotLayout and other results
     return (unique_subplot_titles, unique_majorgroup_labels,
             unique_cluster_labels, label_clusterdir_dict, layout)
 
