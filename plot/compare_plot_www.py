@@ -17,7 +17,7 @@ from django.utils import http
 from expsiftUtils import getCommonAndUniqueProperties
 from plotCPUCompare import plotCPUComparisonDirs
 from plotBurstCompare import plotAvgBurstLenPktComparisonDirs
-from plotBurstCompare import plotAvgBurstLenUsecComparisonDirs
+from plotBurstCompare import plotBurstLenUsecComparisonDirs
 
 
 def getTimeDeltaSeconds(delta = timedelta(0)):
@@ -50,7 +50,7 @@ def summaryPlot(dir2props_dict = {}):
 
     # Generate the burst length in usecs comparison plot
     (_, _, _, _,
-     plot_burstlen_usec) = plotAvgBurstLenUsecComparisonDirs(dir2props_dict)
+     plot_burstlen_usec) = plotBurstLenUsecComparisonDirs(dir2props_dict)
 
     end_time_plot = datetime.now()
 
