@@ -45,8 +45,20 @@ def getAvgBurstLenUsec(directory):
     return avg_burstlen
 
 
+def getPc99BurstLenUsec(directory):
+    # Read the sniffer pickle file and return the average of pc99 burst length
+    # in usecs (convert from nsecs)
+    burstlen_nsec_summary_pfile = os.path.join(
+            directory, 'pickled/burstlen_nsec_summary.txt')
+    summary = readPickledFile(burstlen_nsec_summary_pfile)
+    avg_pc99_burstlen = (numpy.average(map(lambda port: summary[port][1],
+                                           summary.keys())) / 1000.0)
+    return avg_pc99_burstlen
+
+
 # Returns the burstlen comparison summary graph
-def plotBurstLenComparisonDirs(dir2props_dict, fn_get_datapoint, yLabel):
+def plotBurstLenComparisonDirs(dir2props_dict, fn_get_datapoint,
+                               yLabel, layout=None):
     return plotComparisonDirs(
             dir2props_dict,
 
@@ -70,23 +82,44 @@ def plotBurstLenComparisonDirs(dir2props_dict, fn_get_datapoint, yLabel):
             fn_get_datapoint = fn_get_datapoint,
 
             xLabel = 'Number of classes',
-            yLabel = yLabel)
+            yLabel = yLabel,
+            layout = layout)
 
 
 # Returns the "avg burstlen in pkts" comparison summary graph
-def plotAvgBurstLenPktComparisonDirs(dir2props_dict = {}):
+def plotAvgBurstLenPktComparisonDirs(dir2props_dict = {}, layout = None):
     return plotBurstLenComparisonDirs(
             dir2props_dict,
             fn_get_datapoint = getAvgBurstLenPkt,
-            yLabel = 'Avg. burst length (packets)')
+            yLabel = 'Avg. burst length (packets)',
+            layout = layout)
 
 
 # Returns the "avg burstlen in usecs" comparison summary graph
-def plotAvgBurstLenUsecComparisonDirs(dir2props_dict = {}):
+def plotAvgBurstLenUsecComparisonDirs(dir2props_dict = {}, layout = None):
     return plotBurstLenComparisonDirs(
             dir2props_dict,
             fn_get_datapoint = getAvgBurstLenUsec,
-            yLabel = 'Avg. burst length (usecs)')
+            yLabel = 'Avg. burst length (usecs)',
+            layout = layout)
+
+
+# Returns the "avg of pc99 burstlen in usecs" comparison summary graph
+def plotPc99BurstLenUsecComparisonDirs(dir2props_dict = {}, layout = None):
+    return plotBurstLenComparisonDirs(
+            dir2props_dict,
+            fn_get_datapoint = getPc99BurstLenUsec,
+            yLabel = '99th perc. burst length (usecs)',
+            layout = layout)
+
+
+# Returns the "burstlen in usecs" comparison summary graph
+def plotBurstLenUsecComparisonDirs(dir2props_dict = {}, layout = None):
+    # Plot burstlen_usec avg comparison graph
+    _, _, _, _, layout = plotAvgBurstLenUsecComparisonDirs(dir2props_dict)
+
+    # Plot burstlen_usec pc99 comparison graph in the same layout
+    return plotPc99BurstLenUsecComparisonDirs(dir2props_dict, layout)
 
 
 def main(argv):
@@ -122,7 +155,7 @@ def main(argv):
 
     # Plot burstlen_usec comparison graph
     _, _, _, _, burstlen_usec_plot_layout = (
-            plotAvgBurstLenUsecComparisonDirs(dir2props_dict))
+            plotBurstLenUsecComparisonDirs(dir2props_dict))
     burstlen_usec_plot_layout.save(args.plotfile_prefix +
                                    'compare_burstlen_usec.png')
 
