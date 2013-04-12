@@ -45,8 +45,8 @@ def getAvgBurstLenUsec(directory):
     return avg_burstlen
 
 
-# Returns the "avg burstlen in pkts" comparison summary graph
-def plotAvgBurstLenPktComparisonDirs(dir2props_dict = {}):
+# Returns the burstlen comparison summary graph
+def plotBurstLenComparisonDirs(dir2props_dict, fn_get_datapoint, yLabel):
     return plotComparisonDirs(
             dir2props_dict,
 
@@ -67,37 +67,25 @@ def plotAvgBurstLenPktComparisonDirs(dir2props_dict = {}):
 
             fn_get_majorgroup_label = getSysConfLabel,
 
-            fn_get_datapoint = getAvgBurstLenPkt,
+            fn_get_datapoint = fn_get_datapoint,
 
             xLabel = 'Number of classes',
+            yLabel = yLabel)
+
+
+# Returns the "avg burstlen in pkts" comparison summary graph
+def plotAvgBurstLenPktComparisonDirs(dir2props_dict = {}):
+    return plotBurstLenComparisonDirs(
+            dir2props_dict,
+            fn_get_datapoint = getAvgBurstLenPkt,
             yLabel = 'Avg. burst length (packets)')
 
 
 # Returns the "avg burstlen in usecs" comparison summary graph
 def plotAvgBurstLenUsecComparisonDirs(dir2props_dict = {}):
-    return plotComparisonDirs(
+    return plotBurstLenComparisonDirs(
             dir2props_dict,
-
-            subplot_props = ['rate_mbps'],
-            cluster_props = ['nclasses'],
-            trial_props = ['run'],
-
-            fn_sort_subplots = sortRateValSets,
-            fn_sort_clusters = sortNClassesValSets,
-            fn_sort_majorgroups = lambda majorgroups: majorgroups,
-
-            fn_get_subplot_title = (lambda rate_val_set:
-                'Rate: %s Gbps' %
-                (getRateMbpsFromPropValSet(rate_val_set) / 1000)),
-
-            fn_get_cluster_label = (lambda nclasses_val_set:
-                str(getNClassesFromPropValSet(nclasses_val_set))),
-
-            fn_get_majorgroup_label = getSysConfLabel,
-
             fn_get_datapoint = getAvgBurstLenUsec,
-
-            xLabel = 'Number of classes',
             yLabel = 'Avg. burst length (usecs)')
 
 
