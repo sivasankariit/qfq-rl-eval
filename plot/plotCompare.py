@@ -76,7 +76,8 @@ def plotComparisonDirs(dir2props_dict, # dict
                        fn_get_majorgroup_label,
                        fn_get_datapoint,
                        xLabel,
-                       yLabel):
+                       yLabel,
+                       layout = None):
 
     # 1. Turn each directory's set of prop=val strings into a dictionary to
     #     easily look up the value of a particular property for the directory
@@ -207,7 +208,8 @@ def plotComparisonDirs(dir2props_dict, # dict
 
     # 11. Create a clusteredBars Plot for each subplot.
     #     Place all the Plots in a single PlotLayout
-    layout = boomslang.PlotLayout()
+    if not layout:
+        layout = boomslang.PlotLayout()
     for subplot in unique_subplots:
         title = fn_get_subplot_title(subplot)
 
