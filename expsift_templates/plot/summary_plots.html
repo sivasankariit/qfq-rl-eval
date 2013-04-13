@@ -137,19 +137,28 @@
 {% if subplot_titles and majorgroup_labels and cluster_labels and clusterdir_url_dict %}
     <div id="cpu_plot_legend" class="legend">
     {% for s_title in subplot_titles %}
-    {% for c_label in cluster_labels %}
-        <b>{{ s_title }} : {{ c_label }} classes</b><br>
+        <b>{{ s_title }}</b>
+        <table>
+        <tr><td>num_classes: </td>
+        {% for c_label in cluster_labels %}
+            <td align="center">{{ c_label }}</td>
+        {% endfor %}
+        </tr>
+
         {% for m_label in majorgroup_labels %}
-            {{ m_label }} :
+            <tr><td> {{ m_label }}</td>
+            {% for c_label in cluster_labels %}
+
+            <td style="padding-right:5px; padding-left:5px; text-align:center">
             {% with dir_urls=clusterdir_url_dict|get_item:s_title|get_item:m_label|get_item:c_label %}
             {% for dir, dir_url in dir_urls %}
                 <a href="{{ dir_url }}">{{ forloop.counter }}</a>,
             {% endfor %}
             {% endwith %}
-            <br>
+            </td>
+            {% endfor %}
         {% endfor %}
-    {% endfor %}
-        <br>
+        </table><br>
     {% endfor %}
     </div>
 {% endif %}
@@ -172,19 +181,28 @@
 {% if subplot_titles and majorgroup_labels and cluster_labels and clusterdir_url_dict %}
     <div id="burstlen_pkt_plot_legend" class="legend">
     {% for s_title in subplot_titles %}
-    {% for c_label in cluster_labels %}
-        <b>{{ s_title }} : {{ c_label }} classes</b><br>
+        <b>{{ s_title }}</b>
+        <table>
+        <tr><td>num_classes: </td>
+        {% for c_label in cluster_labels %}
+            <td align="center">{{ c_label }}</td>
+        {% endfor %}
+        </tr>
+
         {% for m_label in majorgroup_labels %}
-            {{ m_label }} :
+            <tr><td> {{ m_label }}</td>
+            {% for c_label in cluster_labels %}
+
+            <td style="padding-right:5px; padding-left:5px; text-align:center">
             {% with dir_urls=clusterdir_url_dict|get_item:s_title|get_item:m_label|get_item:c_label %}
             {% for dir, dir_url in dir_urls %}
                 <a href="{{ dir_url }}">{{ forloop.counter }}</a>,
             {% endfor %}
             {% endwith %}
-            <br>
+            </td>
+            {% endfor %}
         {% endfor %}
-    {% endfor %}
-        <br>
+        </table><br>
     {% endfor %}
     </div>
 {% endif %}
@@ -207,19 +225,28 @@
 {% if subplot_titles and majorgroup_labels and cluster_labels and clusterdir_url_dict %}
     <div id="burstlen_usec_plot_legend" class="legend">
     {% for s_title in subplot_titles %}
-    {% for c_label in cluster_labels %}
-        <b>{{ s_title }} : {{ c_label }} classes</b><br>
+        <b>{{ s_title }}</b>
+        <table>
+        <tr><td>num_classes: </td>
+        {% for c_label in cluster_labels %}
+            <td align="center">{{ c_label }}</td>
+        {% endfor %}
+        </tr>
+
         {% for m_label in majorgroup_labels %}
-            {{ m_label }} :
+            <tr><td> {{ m_label }}</td>
+            {% for c_label in cluster_labels %}
+
+            <td style="padding-right:5px; padding-left:5px; text-align:center">
             {% with dir_urls=clusterdir_url_dict|get_item:s_title|get_item:m_label|get_item:c_label %}
             {% for dir, dir_url in dir_urls %}
                 <a href="{{ dir_url }}">{{ forloop.counter }}</a>,
             {% endfor %}
             {% endwith %}
-            <br>
+            </td>
+            {% endfor %}
         {% endfor %}
-    {% endfor %}
-        <br>
+        </table><br>
     {% endfor %}
     </div>
 {% endif %}
