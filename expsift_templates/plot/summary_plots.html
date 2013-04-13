@@ -126,6 +126,7 @@
 
 <div id="cpu_plot_container" class="plot_container">
 <div id="cpu_plot" class="plot">
+<b>Kernel CPU utilization</b></br>
 {% if uri_cpu %}
     <img id="cpu_plot_png" alt = "CPU utilization summary graph"
      src = "{{ uri_cpu }}" height = "800px">
@@ -170,6 +171,7 @@
 
 <div id="burstlen_pkt_plot_container" class="plot_container">
 <div id="burstlen_pkt_plot" class="plot">
+<b>Burst length in packets</b></br>
 {% if uri_burstlen_pkt %}
     <img id="burstlen_pkt_plot_png" alt = "Burst length in packets summary graph"
      src = "{{ uri_burstlen_pkt }}" height = "800px">
@@ -214,6 +216,7 @@
 
 <div id="burstlen_usec_plot_container" class="plot_container">
 <div id="burstlen_usec_plot" class="plot">
+<b>Burst length in usecs</b></br>
 {% if uri_burstlen_usec %}
     <img id="burstlen_usec_plot_png" alt = "Burst length in packets summary graph"
      src = "{{ uri_burstlen_usec }}" height = "800px">
