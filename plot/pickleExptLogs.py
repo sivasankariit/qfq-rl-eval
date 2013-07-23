@@ -209,8 +209,12 @@ def pickleMcperf(mcperf_files, pickle_dir, stats_dir):
     lat_pc999 = sorted_hist[bisect.bisect(cum_sum, int(num_samples * 99.9/100))][0]
 
     # Pickle mcperf latency summary
-    mcperf_summary = (agg_reqr, agg_rspr,
-                      lat_avg, lat_median, lat_pc99, lat_pc999)
+    mcperf_summary = { 'agg_reqr'   : agg_reqr,
+                       'agg_rspr'   : agg_rspr,
+                       'lat_avg'    : lat_avg,
+                       'lat_median' : lat_median,
+                       'lat_pc99'   : lat_pc99,
+                       'lat_pc999'  : lat_pc999 }
     mcperf_summary_pfile = os.path.join(pickle_dir, 'mcperf_summary_p.txt')
     fd = open(mcperf_summary_pfile, 'wb')
     cPickle.dump(mcperf_summary, fd)
