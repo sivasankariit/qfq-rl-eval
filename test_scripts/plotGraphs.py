@@ -7,10 +7,15 @@
 # experiment directory.
 
 import argparse
+import imp
 import os
 import plumbum
 import sys
 from site_config import *
+
+# Import expsiftUtils from PLOT_SCRIPTS_DIR
+sys.path.append(config['PLOT_SCRIPTS_DIR'])
+from expsiftUtils import readDirTagFileProperty
 
 
 parser = argparse.ArgumentParser(description='Plot graphs recursively for '
@@ -21,6 +26,10 @@ parser.add_argument('--force_replot', '-f', dest='force_replot',
                     help='Replot graphs even if they already exist '
                          '(not implemented yet)',
                     action="store_true")
+
+
+memcached_workloads = ['memcached_set', 'memcached_get']
+trafgen_workloads = ['trafgen_tcp', 'trafgen_udp']
 
 
 def main(argv):
@@ -43,6 +52,8 @@ def main(argv):
                                             'pickleExptLogs.py')]
     plot_sniffer_cmd = plumbum.local[os.path.join(config['PLOT_SCRIPTS_DIR'],
                                                   'plotSniffer.py')]
+    plot_mcperf_lat_cmd = plumbum.local[os.path.join(config['PLOT_SCRIPTS_DIR'],
+                                                     'plotMcperfLatency.py')]
 
     # Temp directory for plotting graphs
     plot_tmpdir = config['PLOT_TMPDIR']
@@ -63,15 +74,28 @@ def main(argv):
             else:
                 pickle_cmd(path, plot_tmpdir)
 
+            # Read the workload type for the experiment directory
+            workload = readDirTagFileProperty(path, 'workload')
+            if (not workload in trafgen_workloads and
+                not workload in memcached_workloads):
+               print 'Workload not recognized for expt: %s' % args.expt_dir
+               sys.exit(1)
+
             # Plot experiment graphs
             print '... Plotting experiment graphs'
             expt_plot_dir = os.path.join(path, 'plot/')
             if not os.path.exists(expt_plot_dir):
                 os.makedirs(expt_plot_dir)
-            if args.force_replot:
-                plot_sniffer_cmd('-f', path, expt_plot_dir)
-            else:
-                plot_sniffer_cmd(path, expt_plot_dir)
+            if workload in trafgen_workloads:
+                if args.force_replot:
+                    plot_sniffer_cmd('-f', path, expt_plot_dir)
+                else:
+                    plot_sniffer_cmd(path, expt_plot_dir)
+            elif workload in memcached_workloads:
+                if args.force_replot:
+                    plot_mcperf_lat_cmd('-f', path, expt_plot_dir)
+                else:
+                    plot_mcperf_lat_cmd(path, expt_plot_dir)
 
     print 'Plotted graphs for %d experiments under %s' % (num_exp_dirs,
             args.base_dir)
