@@ -13,7 +13,7 @@ site_config_parser.add_argument('--var', dest='var',
 
 #############
 
-SITE = 'Siva'
+SITE = 'Siva-MC'
 
 config = {}
 
@@ -123,7 +123,7 @@ elif SITE == 'Siva':
     # Sniffer host with Myri10G sniffer
     config['SNIFFER_HOST'] = ''
     config['SNIFFER'] = '/home/ssradhak/src/rate_limiting/sniffer/tcpdump_tool/snf_simple_tcpdump'
-    config['SNIFFER_TMPDIR'] = '/home/ssradhak/tmp/sniffer/'
+    config['SNIFFER_TMPDIR'] = '/mnt/disks/cciss/c0d0p1/ssradhak/sniffer/'
     config['SNIFFER_CPU'] = 2
     config['SNIFFER_DELAY'] = 25 # Seconds to delay sniffer initially
     config['SNIFFER_DURATION'] = 10 # Seconds to sniff traffic
@@ -135,7 +135,66 @@ elif SITE == 'Siva':
     config['EXPT_RUN'] = '1 2 3'
 
     # tmp directory for plotting sniffer graphs
-    config['PLOT_TMPDIR'] = '/home/ssradhak/tmp/plot/'
+    #config['PLOT_TMPDIR'] = '/home/ssradhak/tmp/plot/'
+    config['PLOT_TMPDIR'] = '/mnt/disks/cciss/c1d1p1/ssradhak/tmp/plot/'
+
+elif SITE == 'Siva-MC':
+
+    config['RL_MODULE_NAME'] = ''
+    config['RL_MODULE'] = ''
+    config['DEFAULT_DEV'] = 'eth1'
+    config['SHELL_PROMPT'] = '$'
+    config['TC'] = '/home/ssradhak/src/rate_limiting/iproute2/tc/tc'
+    config['QFQ_PATH'] = '/home/ssradhak/src/rate_limiting/qfq-rl/sch_qfq.ko'
+    config['TRAFGEN'] = '/home/ssradhak/src/rate_limiting/trafgen/trafgen'
+    config['PLOT_SCRIPTS_DIR'] = '/home/ssradhak/src/rate_limiting/qfq-rl-eval/plot'
+
+    # Server/client nodes
+    config['DEFAULT_MC_SERVERS'] = ['192.168.2.64']
+    config['DEFAULT_MC_CLIENTS'] = ['192.168.2.80']
+
+    # NIC details
+    config['NIC_VENDOR'] = 'Intel'
+    config['NIC_HW_QUEUES'] = 16
+
+    # Mellanox NIC QOS scripts
+    config['TC_WRAP'] = '/home/ssradhak/src/rate_limiting/mellanox/QoS_upstream/tc_wrap.py'
+    config['MLNX_QOS'] = '/home/ssradhak/src/rate_limiting/mellanox/QoS_upstream/mlnx_qos'
+
+    # CPUs available for tenants
+    config['NUM_CPUS'] = 16
+    config['EXCLUDE_CPUS'] = [2]
+
+    '''
+    CPU numbering on SEED testbed (dcswitch81):
+
+    (0  8)  (Socket 0, Core 0, two hyperthreads)
+    (4 12)  (Socket 0, Core 1, two hyperthreads)
+    (2 10)  (Socket 0, Core 2, two hyperthreads)
+    (6 14)  (Socket 0, Core 3, two hyperthreads)
+
+    (1  9)  (Socket 1, Core 0, two hyperthreads)
+    (5 13)  (Socket 1, Core 1, two hyperthreads)
+    (3 11)  (Socket 1, Core 2, two hyperthreads)
+    (7 15)  (Socket 1, Core 3, two hyperthreads)
+    '''
+    config['INTR_MAPPING'] = [0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,0]
+
+    # Sniffer host with Myri10G sniffer
+    config['SNIFFER_HOST'] = ''
+    config['SNIFFER'] = '/home/ssradhak/src/rate_limiting/sniffer/tcpdump_tool/snf_simple_tcpdump'
+    config['SNIFFER_TMPDIR'] = '/mnt/disks/cciss/c0d0p1/ssradhak/sniffer/'
+    config['SNIFFER_CPU'] = 2
+    config['SNIFFER_DELAY'] = 25 # Seconds to delay sniffer initially
+    config['SNIFFER_DURATION'] = 10 # Seconds to sniff traffic
+
+    # Experiment script configuration
+    config['EXPT_RATES'] = '1000 5000 9000'
+    config['EXPT_RL'] = 'htb hwrl'
+    config['EXPT_RUN'] = '1 2 3'
+
+    # tmp directory for plotting sniffer graphs
+    config['PLOT_TMPDIR'] = '/mnt/disks/cciss/c1d1p1/ssradhak/tmp/plot/'
 
 ##########################################################################
 # Use this as a script that returns value of a variable to be used in bash

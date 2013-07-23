@@ -567,6 +567,24 @@ class Host(object):
         print "Copying experiment output"
         local_cmd(c)
 
+    def copy_by_host(self, src_dir="/tmp", out_dir="/tmp", exptid=None):
+        """
+        Collect experiment output from different hosts to central directory
+        for analysis
+        """
+        if exptid is None:
+            print "Please supply experiment id"
+            return
+
+        src_dir = os.path.abspath(src_dir)
+        out_dir = os.path.abspath(out_dir)
+
+        dst_dir = "%s/%s" % (out_dir, self.hostname())
+        self.mkdir(dst_dir)
+        cmd = "cp -r %s/* %s" % (src_dir, dst_dir)
+        self.cmd(cmd)
+        print "Copying experiment output from %s" % self.hostname()
+
     def hostname(self):
         try:
             return socket.gethostbyaddr(self.addr)[0]
