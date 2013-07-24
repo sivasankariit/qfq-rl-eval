@@ -19,9 +19,9 @@ mkdir -p $dir
 touch $dir/expt_config.txt
 echo "NUM_CPUS = ${NUM_CPUS}" >> $dir/expt_config.txt
 echo "EXCLUDE_CPUS = ${EXCLUDE_CPUS}" >> $dir/expt_config.txt
-rate=9000
-rl="none"
-for mcrate in 11000 13000 15000; do
+pair_rate=1000
+for mcrate in 5000 7000 9000 11000; do
+for rl in none htb qfq; do
 for run in 1; do
     exptid=memcached-rl-$rl-mcrate-$mcrate-run-$run
     mkdir -p $dir/$exptid
@@ -40,6 +40,7 @@ for run in 1; do
     echo "lro=on" >> expsift_tags
     echo "gro=off" >> expsift_tags
     echo "rl=$rl" >> expsift_tags
+    echo "pair_rate=$pair_rate" >> expsift_tags
     echo "mcrate=$mcrate" >> expsift_tags
     echo "tenants=8" >> expsift_tags
     echo "run=$run" >> expsift_tags
@@ -49,7 +50,7 @@ for run in 1; do
     python mcperf.py --exptid $exptid \
         -t $time \
         --rl $rl \
-        --rate $rate \
+        --pair_rate $pair_rate \
         --mcrate $mcrate \
         --mcworkload "set" \
         --mtu $mtu \
@@ -58,6 +59,7 @@ for run in 1; do
         --outdir $dir/$exptid
 
     chmod a+w $dir/$exptid
+done;
 done;
 done;
 
