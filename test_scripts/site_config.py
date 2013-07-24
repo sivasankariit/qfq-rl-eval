@@ -21,7 +21,6 @@ if SITE == 'Vimal':
 
     config['RL_MODULE_NAME'] = ''
     config['RL_MODULE'] = ''
-    config['DEFAULT_DEV'] = 'eth2'
     config['NETPERF_DIR'] = '/root/vimal/exports/netperf'
     config['SHELL_PROMPT'] = '#'
     config['UDP'] = '/root/vimal/rl-qfq/utils/udp'
@@ -31,6 +30,9 @@ if SITE == 'Vimal':
 
     # Server/client nodes
     config['DEFAULT_HOSTS'] = ['e2', 'e1']
+
+    # Interface details for each node
+    config['DEFAULT_DEV'] = { 'e2' : 'eth2', 'e1' : 'eth2' }
 
     # NIC details
     config['NIC_VENDOR'] = 'Emulex'
@@ -79,7 +81,6 @@ elif SITE == 'Siva':
 
     config['RL_MODULE_NAME'] = ''
     config['RL_MODULE'] = ''
-    config['DEFAULT_DEV'] = 'eth1'
     config['NETPERF_DIR'] = '/home/ssradhak/src/software/netperf/bin'
     config['SHELL_PROMPT'] = '$'
     config['UDP'] = '/home/ssradhak/src/rate_limiting/qfq-rl-eval/utils/udp'
@@ -91,6 +92,10 @@ elif SITE == 'Siva':
 
     # Server/client nodes
     config['DEFAULT_HOSTS'] = ['192.168.2.80', '192.168.2.64']
+
+    # Interface details for each node
+    config['DEFAULT_DEV'] = { '192.168.2.64' : 'eth1',
+                              '192.168.2.80' : 'eth2' }
 
     # NIC details
     config['NIC_VENDOR'] = 'Intel'
@@ -142,7 +147,6 @@ elif SITE == 'Siva-MC':
 
     config['RL_MODULE_NAME'] = ''
     config['RL_MODULE'] = ''
-    config['DEFAULT_DEV'] = 'eth1'
     config['SHELL_PROMPT'] = '$'
     config['TC'] = '/home/ssradhak/src/rate_limiting/iproute2/tc/tc'
     config['QFQ_PATH'] = '/home/ssradhak/src/rate_limiting/qfq-rl/sch_qfq.ko'
@@ -152,6 +156,10 @@ elif SITE == 'Siva-MC':
     # Server/client nodes
     config['DEFAULT_MC_SERVERS'] = ['192.168.2.64']
     config['DEFAULT_MC_CLIENTS'] = ['192.168.2.80']
+
+    # Interface details for each node
+    config['DEFAULT_DEV'] = { '192.168.2.64' : 'eth1',
+                              '192.168.2.80' : 'eth2' }
 
     # NIC details
     config['NIC_VENDOR'] = 'Intel'

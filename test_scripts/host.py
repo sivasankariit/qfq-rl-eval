@@ -150,7 +150,7 @@ class Host(object):
         print "%s: %s" % (addr, c)
 
     def get_10g_dev(self):
-        return config['DEFAULT_DEV']
+        return config['DEFAULT_DEV'][self.addr]
 
     def mkdir(self, dir):
         self.cmd("mkdir -p %s" % dir)
