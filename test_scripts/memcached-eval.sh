@@ -20,8 +20,8 @@ touch $dir/expt_config.txt
 echo "NUM_CPUS = ${NUM_CPUS}" >> $dir/expt_config.txt
 echo "EXCLUDE_CPUS = ${EXCLUDE_CPUS}" >> $dir/expt_config.txt
 rate=9000
-mcrate=5000
 rl="none"
+for mcrate in 11000 13000 15000; do
 for run in 1; do
     exptid=memcached-rl-$rl-mcrate-$mcrate-run-$run
     mkdir -p $dir/$exptid
@@ -40,6 +40,8 @@ for run in 1; do
     echo "lro=on" >> expsift_tags
     echo "gro=off" >> expsift_tags
     echo "rl=$rl" >> expsift_tags
+    echo "mcrate=$mcrate" >> expsift_tags
+    echo "tenants=8" >> expsift_tags
     echo "run=$run" >> expsift_tags
     popd
 
@@ -56,6 +58,7 @@ for run in 1; do
         --outdir $dir/$exptid
 
     chmod a+w $dir/$exptid
+done;
 done;
 
 echo "Experiment results are in $dir"
