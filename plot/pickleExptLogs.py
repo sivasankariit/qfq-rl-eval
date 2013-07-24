@@ -37,11 +37,13 @@ pickled_files = {'sniffer' : ['burstlen_pkt.txt',
                               'pkt_len_freq.txt'],
                  'mpstat' : ['mpstat_p.txt'],
                  'ethstats' : ['net_p.txt'],
+                 'mpstat_mc' : ['mpstat_mc_p.txt'],
                  'mcperf' : ['mcperf_p.txt']}
 stats_files = {'sniffer' : ['snf_stats.txt',
                             'pkt_snf_head20000.txt'],
                'mpstat' : ['cpu_util.txt'],
                'ethstats' : ['net_util.txt'],
+               'mpstat_mc' : ['cpu_util.txt'],
                'mcperf' : ['mcperf.txt']}
 
 memcached_workloads = ['memcached_set', 'memcached_get']
@@ -225,12 +227,59 @@ def pickleMcperf(mcperf_files, pickle_dir, stats_dir):
     mcperf_stats_fd = open(mcperf_stats_file, 'w')
     mcperf_stats_fd.write('Aggregate request rate = %s\n' % str(agg_reqr))
     mcperf_stats_fd.write('Aggregate response rate = %s\n' % str(agg_rspr))
-    mcperf_stats_fd.write('Latency stats (ms):\n')
+    mcperf_stats_fd.write('Latency stats (usec):\n')
     mcperf_stats_fd.write('  Average = %0.1f\n' % lat_avg)
     mcperf_stats_fd.write('  Median  = %s\n' % str(lat_median))
     mcperf_stats_fd.write('  pc99    = %s\n' % str(lat_pc99))
     mcperf_stats_fd.write('  pc999   = %s\n' % str(lat_pc999))
     mcperf_stats_fd.close()
+
+
+def pickleMPStatMC(client_mpstat_files, server_mpstat_files,
+                   pickle_dir, stats_dir):
+
+    client_usage = []
+    server_usage = []
+    # Parse the mpstat log files
+    for mpstat_file in client_mpstat_files:
+        mstats = MPStatParser(mpstat_file)
+        client_usage.append(mstats.get_avg_usage())
+    for mpstat_file in server_mpstat_files:
+        mstats = MPStatParser(mpstat_file)
+        server_usage.append(mstats.get_avg_usage())
+
+    # Compute average utilizations
+    cli_muser = numpy.mean(map(lambda (muser, msys, msirq): muser, client_usage))
+    cli_msys = numpy.mean(map(lambda (muser, msys, msirq): msys, client_usage))
+    cli_msirq = numpy.mean(map(lambda (muser, msys, msirq): msirq, client_usage))
+    srv_muser = numpy.mean(map(lambda (muser, msys, msirq): muser, server_usage))
+    srv_msys = numpy.mean(map(lambda (muser, msys, msirq): msys, server_usage))
+    srv_msirq = numpy.mean(map(lambda (muser, msys, msirq): msirq, server_usage))
+    cli_summary = "user: %.2f, sys: %.2f, sirq: %.2f" % (
+            cli_muser, cli_msys, cli_msirq)
+    srv_summary = "user: %.2f, sys: %.2f, sirq: %.2f" % (
+            srv_muser, srv_msys, srv_msirq)
+
+    # Pickle CPU utilization data
+    mpstat_pfile = os.path.join(pickle_dir, 'mpstat_mc_p.txt')
+    cli_kernel_usage = cli_msys + cli_msirq
+    srv_kernel_usage = srv_msys + srv_msirq
+    summary = mstats.summary()
+    data = (cli_kernel_usage, cli_summary, srv_kernel_usage, srv_summary)
+    fd = open(mpstat_pfile, 'wb')
+    cPickle.dump(data, fd)
+    fd.close()
+
+    # Write stats about CPU utilization
+    cpu_stats_file = os.path.join(stats_dir, 'cpu_util.txt')
+    cpu_stats_fd = open(cpu_stats_file, 'w')
+    cpu_stats_fd.write('Client kernel usage (average) = %s\n' % str(cli_kernel_usage))
+    cpu_stats_fd.write('--- Average usage breakdown ---\n')
+    cpu_stats_fd.write(str(cli_summary))
+    cpu_stats_fd.write('\nServer kernel usage (average) = %s\n' % str(srv_kernel_usage))
+    cpu_stats_fd.write('--- Average usage breakdown ---\n')
+    cpu_stats_fd.write(str(srv_summary))
+    cpu_stats_fd.close()
 
 
 def allFilesGenerated(category, pickle_dir, stats_dir):
@@ -313,11 +362,25 @@ def main(argv):
             mcperf_files = []
             for client in clients:
                 files = glob.glob(os.path.join(args.expt_dir, 'logs',
-                                               client, 'mcperf-t*-c*-*.txt'))
+                                    client, 'mcperf-t*-c*-*.txt'))
                 mcperf_files.extend(files)
 
-
             pickleMcperf(mcperf_files, pickle_dir, stats_dir)
+
+        # Pickle mpstat data for clients
+        if (args.force_rewrite or
+            not allFilesGenerated('mpstat_mc', pickle_dir, stats_dir)):
+            client_mpstat_files = [ os.path.join(args.expt_dir, 'logs',
+                                                 client, 'mpstat.txt')
+                                    for client in clients ]
+            server_mpstat_files = [ os.path.join(args.expt_dir, 'logs',
+                                                 server, 'mpstat.txt')
+                                    for server in servers ]
+
+            pickleMPStatMC(client_mpstat_files, server_mpstat_files,
+                           pickle_dir, stats_dir)
+
+        # Pickle mpstat data for servers
 
 
 if __name__ == '__main__':
