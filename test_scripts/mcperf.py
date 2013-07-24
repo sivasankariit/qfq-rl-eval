@@ -229,7 +229,7 @@ class MemcachedCluster(Expt):
         TODO(siva): Script up the rate limiter configuration
         '''
 
-        hlist.start_cpu_monitor(e('logs'))
+        #hlist.start_cpu_monitor(e('logs'))
         hlist.start_bw_monitor(e('logs'))
         #if self.opts("rl") == "qfq":
         #    self.client.start_qfq_monitor(e('logs'))
@@ -273,7 +273,8 @@ class MemcachedCluster(Expt):
 
 
     def stop(self):
-        self.hlist.killall("memcached")
+        self.hlist.stop_mpstat()
+        self.hlist.killall("memcached mcperf")
         if self.opts("sniffer"):
             self.hsniffer.copy_local(e('', tmpdir=config['SNIFFER_TMPDIR']),
                                     self.opts("exptid") + "-snf",
@@ -286,4 +287,4 @@ class MemcachedCluster(Expt):
             self.hlist.clear_mellanox_hw_rate_limits()
 
 
-MemcachedCluster(vars(args)).run()
+MemcachedCluster(vars(args)).run(delta=5)
