@@ -44,11 +44,13 @@ parser.add_argument('--time', '-t',
 
 parser.add_argument('--servers',
                     dest="servers",
+                    metavar='SERVER',
                     help="Memcached servers to run tests",
                     nargs="+", default=config['DEFAULT_MC_SERVERS'])
 
 parser.add_argument('--clients',
                     dest="clients",
+                    metavar='CLIENT',
                     help="Memcached clients to run tests",
                     nargs="+", default=config['DEFAULT_MC_CLIENTS'])
 
@@ -57,11 +59,11 @@ parser.add_argument('--sniffer',
                     help="The sniffer machine to capture packet timings",
                     default='')
 
-parser.add_argument('--rate',
-                    dest="rate",
+parser.add_argument('--pair_rate',
+                    dest="pair_rate",
                     type=int,
-                    help="Rate limit for each tenant's server-client traffic",
-                    default=1000)
+                    help="Rate limit for each tenant's server-client traffic (Mbps)",
+                    default=200)
 
 parser.add_argument('--mcrate',
                     dest="mcrate",
@@ -160,7 +162,8 @@ class MemcachedCluster(Expt):
         hservers = HostList()
         hclients = HostList()
         hlist = HostList()
-        hsniffer = Host(sniffer)
+        if sniffer:
+            hsniffer = Host(sniffer)
 
         self.log(T.colored("Servers:---", "green"))
         for ip in self.opts("servers"):
@@ -198,18 +201,21 @@ class MemcachedCluster(Expt):
             hsniffer.cmd("killall -9 %s" % config['SNIFFER'])
 
         hlist.rmmod()
-        hlist.killall("udp")
         hlist.stop_trafgen()
-        hlist.remove_qdiscs()
         hlist.cmd("sudo service memcached stop")
-        if config['NIC_VENDOR'] == "Intel":
-            hlist.clear_intel_hw_rate_limits(config['NIC_HW_QUEUES'])
-            sleep(1)
-        elif config['NIC_VENDOR'] == "Mellanox":
-            hlist.clear_mellanox_hw_rate_limits()
-            sleep(1)
+        hlist.killall("udp memcached mcperf")
+        hlist.remove_qdiscs()
+        hlist.clear_intel_hw_rate_limits(config['NIC_HW_QUEUES'])
+        hlist.clear_mellanox_hw_rate_limits()
+        sleep(1)
 
         hlist.configure_tcp_limit_output_bytes()
+
+        # Setup interrupt affinity
+        '''
+        TODO(siva): Configure interrupts to only be sent to respective CPU cores
+        to which the tenants are pinned.
+        '''
 
         # Start memcached on servers - one instance for each tenant, pinned to a
         # different CPU core
@@ -225,14 +231,59 @@ class MemcachedCluster(Expt):
         # Configure rate limits
         # On server, configure separate rate limit to each tenant's client
         # On client, configure separate rate limit to each tenant's server
-        '''
-        TODO(siva): Script up the rate limiter configuration
-        '''
+        total_rate = (self.opts("num_tenants") * len(hservers.lst) *
+                      len(hclients.lst) * self.opts("pair_rate"))
+        if self.opts("rl") == "htb":
+            hlist.mc_add_htb_qdisc(str(total_rate) + "Mbit",
+                                   self.opts("htb_mtu"))
+        elif self.opts("rl") == "qfq":
+            hlist.mc_add_qfq_qdisc(self.opts("mtu"))
 
-        #hlist.start_cpu_monitor(e('logs'))
+        # Qdisc classes
+        # class 1 : default class
+        # Separate class for each (tenant, srv_id, cli_id) tuple
+        # (start_port +
+        #  (tenant * num_servers * num_clients) +
+        #  (srv_id * num_clients) +
+        #  (cli_id)) :  On client, this represents traffic to srv_id for tenant
+        #               On server, this represents traffic to cli_id for tenant
+
+        for tenant in xrange(0, self.opts("num_tenants")):
+
+            for (srv_id, hserver) in enumerate(hservers.lst):
+                server_ip = socket.gethostbyname(hserver.hostname())
+
+                for (cli_id, hclient) in enumerate(hclients.lst):
+                    client_ip = socket.gethostbyname(hclient.hostname())
+
+                    srv_port = start_port + tenant
+                    rate_str = '%.3fMbit' % self.opts("pair_rate")
+                    klass = ((tenant * len(hservers.lst) * len(hclients.lst)) +
+                             (srv_id * len(hclients.lst)) +
+                             (cli_id))
+
+                    if self.opts("rl") == "htb":
+                        hclient.mc_add_htb_class(rate=rate_str, ceil=rate_str,
+                                                 klass=klass,
+                                                 htb_mtu=self.opts("htb_mtu"))
+                        hserver.mc_add_htb_class(rate=rate_str, ceil=rate_str,
+                                                 klass=klass,
+                                                 htb_mtu=self.opts("htb_mtu"))
+                    elif self.opts("rl") == "qfq":
+                        hclient.mc_add_qfq_class(rate=self.opts("pair_rate"),
+                                                 klass=klass,
+                                                 mtu=self.opts("mtu"))
+                        hserver.mc_add_qfq_class(rate=self.opts("pair_rate"),
+                                                 klass=klass,
+                                                 mtu=self.opts("mtu"))
+                    # Client -> Server traffic
+                    hclient.mc_add_qdisc_filter(server_ip, sport=0,
+                                                dport=srv_port, klass=klass)
+                    # Server -> Client traffic
+                    hserver.mc_add_qdisc_filter(client_ip, sport=srv_port,
+                                                dport=0, klass=klass)
+
         hlist.start_bw_monitor(e('logs'))
-        #if self.opts("rl") == "qfq":
-        #    self.client.start_qfq_monitor(e('logs'))
         hlist.start_mpstat(e('logs'))
         hlist.set_mtu(self.opts("mtu"))
         if sniffer:
@@ -269,22 +320,23 @@ class MemcachedCluster(Expt):
         self.hservers = hservers
         self.hclients = hclients
         self.hlist = hlist
-        self.hsniffer = hsniffer
+        if sniffer:
+            self.hsniffer = hsniffer
 
 
     def stop(self):
         self.hlist.stop_mpstat()
         self.hlist.killall("memcached mcperf")
+        self.hlist.remove_qdiscs()
+        self.hlist.rmmod_qfq()
         if self.opts("sniffer"):
             self.hsniffer.copy_local(e('', tmpdir=config['SNIFFER_TMPDIR']),
                                     self.opts("exptid") + "-snf",
                                     tmpdir=config['SNIFFER_TMPDIR'])
         self.hlist.copy_by_host(e('logs'), self.opts("outdir") + "/logs",
                                 self.opts("exptid"))
-        if config["NIC_VENDOR"] == "Intel":
-            self.hlist.clear_intel_hw_rate_limits(config['NIC_HW_QUEUES'])
-        elif config['NIC_VENDOR'] == "Mellanox":
-            self.hlist.clear_mellanox_hw_rate_limits()
+        self.hlist.clear_intel_hw_rate_limits(config['NIC_HW_QUEUES'])
+        self.hlist.clear_mellanox_hw_rate_limits()
 
 
 MemcachedCluster(vars(args)).run(delta=5)

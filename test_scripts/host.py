@@ -175,12 +175,14 @@ class Host(object):
 
     def disable_ipv6(self):
         dev = self.get_10g_dev()
-        self.cmd("sysctl -w net.ipv6.conf.%s.disable_ipv6=1;" % dev)
+        self.cmd("sudo sysctl -w net.ipv6.conf.%s.disable_ipv6=1;" % dev)
+
+    def rmmod_qfq(self):
+        self.cmd("sudo rmmod sch_qfq")
 
     def insmod_qfq(self):
-        self.cmd("sudo rmmod sch_qfq; insmod %s" % config['QFQ_PATH'])
+        self.cmd("sudo rmmod sch_qfq; sudo insmod %s" % config['QFQ_PATH'])
         self.disable_ipv6()
-        return
 
     def remove_qdiscs(self):
         iface = self.get_10g_dev()
@@ -231,6 +233,68 @@ class Host(object):
         c  = "sudo %s -s filter show dev %s > %s/htb-filter.txt" % (config['TC'], dev, dir)
         self.cmd(c)
 
+    def mc_add_htb_qdisc(self, rate='5Gbit', mtu=1500):
+        iface = self.get_10g_dev()
+        self.remove_qdiscs()
+        self.rmmod_qfq()
+        c  = ("sudo %s qdisc add dev %s root handle 1: htb default 1;"
+              % (config['TC'], iface))
+        c += ("sudo %s class add dev %s classid 1:1 parent 1: "
+              % (config['TC'], iface))
+        c += "htb rate %s mtu %s burst 15k;" % (rate, mtu)
+        self.cmd(c)
+
+    def mc_add_qfq_qdisc(self, mtu=1500):
+        # Default qdisc class has rate limit of 100Mbit
+        iface = self.get_10g_dev()
+        self.remove_qdiscs()
+        self.insmod_qfq()
+        # 1. Add QFQ root qdisc
+        # 2. Create default class
+        # 3. Add pfifo qdisc to default class
+        # 4. Create default filter
+        c  = ("sudo %s qdisc add dev %s root handle 1: qfq;"
+              % (config['TC'], iface))
+
+        c += ("sudo %s class add dev %s classid 1:1 parent 1: "
+              % (config['TC'], iface))
+        c += "qfq weight 100 maxpkt %s;" % mtu
+
+        c += ("sudo %s qdisc add dev %s parent 1:1 pfifo limit 200;"
+              % (config['TC'], iface))
+
+        c += ("sudo %s filter add dev %s parent 1: "
+              % (config['TC'], iface))
+        c += "protocol all prio 2 u32 match u32 0 0 flowid 1:1"
+        self.cmd(c)
+
+    def mc_add_qdisc_filter(self, dst_ip, sport=5000, dport=5000, klass=5000):
+        dev = self.get_10g_dev()
+        c  = ("sudo %s filter add dev %s parent 1: protocol ip prio 1 "
+              % (config['TC'], dev))
+        c += "u32 match ip dst %s match ip " % dst_ip
+        if sport:
+            c += "sport %d 0xffff flowid 1:%s" % (sport, klass)
+        elif dport:
+            c += "dport %d 0xffff flowid 1:%s" % (dport, klass)
+        self.cmd(c)
+
+    def mc_add_htb_class(self, rate='5Gbit', ceil='5Gbit', klass=5000, htb_mtu=1500):
+        dev = self.get_10g_dev()
+        c  = ("sudo %s class add dev %s classid 1:%d parent 1: "
+             % (config['TC'], dev, klass))
+        c += "htb rate %s ceil %s mtu %s burst 15k;" % (rate, ceil, htb_mtu)
+        self.cmd(c)
+
+    def mc_add_qfq_class(self, rate='5Gbit', klass=5000, mtu=1500):
+        dev = self.get_10g_dev()
+        c  = ("sudo %s class add dev %s classid 1:%d parent 1: "
+              % (config['TC'], dev, klass))
+        c += "qfq weight %s maxpkt %s;" % (rate, mtu)
+        c += ("sudo %s qdisc add dev %s parent 1:%d pfifo limit 200;"
+              % (config['TC'], dev, klass))
+        self.cmd(c)
+
     def add_intel_hw_rate_limit(self, rate='5000', queue=2):
         # rate in Mbps
         iface = self.get_10g_dev()
@@ -244,7 +308,7 @@ class Host(object):
         c  = "maxqueue=`echo $[%d - 1]`; " % numqueues
         c += "for queue in `seq 0 $maxqueue`; do "
         c += "  echo 0 | sudo tee /sys/class/net/%s/queues/tx-$queue/tx_rate_limit > /dev/null; " % iface
-        c += "  sleep 0.5;"
+        c += "  sleep 0.1;"
         c += "done;"
         self.cmd(c)
 
