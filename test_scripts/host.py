@@ -36,7 +36,7 @@ def controladdr(addr):
     # TODO: this is a simple mapping scheme from the 10GbE
     # interface hostname to the control interface hostname.
     # e10 -> l10.  We may want a general mapping here.
-    return addr.replace('e', 'l')
+    return 'dcswitch' + addr.split('.')[3]
 
 class ShellWrapper:
     def __init__(self, chan):
