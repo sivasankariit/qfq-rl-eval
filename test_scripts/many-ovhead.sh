@@ -16,10 +16,7 @@ EXPT_RATES=`python site_config.py --var EXPT_RATES`
 EXPT_NCLASSES=`python site_config.py --var EXPT_NCLASSES`
 EXPT_RL=`python site_config.py --var EXPT_RL`
 EXPT_RUN=`python site_config.py --var EXPT_RUN`
-DEV=`python site_config.py --var DEFAULT_DEV`
 NUM_CPUS=`python site_config.py --var NUM_CPUS`
-
-sudo python ../utils/set-affinity.py $DEV
 
 mkdir -p $dir
 touch $dir/expt_config.txt
