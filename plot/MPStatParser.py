@@ -39,14 +39,21 @@ class MPStatParser:
                 continue
             for i,k in enumerate(keys):
                 ret[k].append(data[i])
+        # Ignore first and last few seconds of data
+        for k in keys:
+            ret[k] = ret[k][15:-15]
         self.usage = ret
         return ret
 
     def summary(self):
+        (muser, msys, msirq) = self.get_avg_usage()
+        return "user: %.2f, sys: %.2f, sirq: %.2f" % (muser, msys, msirq)
+
+    def get_avg_usage(self):
         muser = mean(self.usage["user"])
         msys = mean(self.usage["sys"])
         msirq = mean(self.usage["sirq"])
-        return "user: %.2f, sys: %.2f, sirq: %.2f" % (muser, msys, msirq)
+        return (muser, msys, msirq)
 
     def kernel_usage(self):
         msys = mean(self.usage["sys"])
