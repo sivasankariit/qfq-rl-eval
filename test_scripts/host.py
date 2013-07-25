@@ -428,6 +428,24 @@ class Host(object):
         c += " echo 0 > /proc/irq/$n/smp_affinity; "
         self.cmd(c)
 
+    def configure_iface_interrupt_affinity(self, cpus=[0]):
+        dev = self.get_10g_dev()
+        self.stop_irqbalance()
+        c  = "irqs=`grep '%s' /proc/interrupts | awk -F ':' '{print $1}'`; " % dev
+        c += "cpus=(%s); cnt=0;" % ' '.join(map(lambda x: str(x), cpus))
+        c += "for irq in $irqs; do"
+        c += "  ind=$(($cnt %% %d));" % len(cpus)
+        c += "  cpu=$((1 << ${cpus[ind]}));"
+        c += '  mask=`echo "obase=16; $cpu" | bc`;'
+        c += "  echo $mask | sudo tee /proc/irq/$irq/smp_affinity > /dev/null;"
+        c += "  cnt=$(($cnt+1));"
+        c += "done;"
+        self.cmd(c)
+
+    def stop_irqbalance(self):
+        c = "sudo service irqbalance stop"
+        self.cmd(c)
+
     def configure_tcp_limit_output_bytes(self):
         c = "sudo sysctl -w net.ipv4.tcp_limit_output_bytes=13107200"
         self.cmd(c)
