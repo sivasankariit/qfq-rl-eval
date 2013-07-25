@@ -59,8 +59,8 @@ parser.add_argument('--sniffer',
                     help="The sniffer machine to capture packet timings",
                     default='')
 
-parser.add_argument('--pair_rate',
-                    dest="pair_rate",
+parser.add_argument('--mc_pair_rate',
+                    dest="mc_pair_rate",
                     type=int,
                     help="Rate limit for each tenant's server-client traffic (Mbps)",
                     default=200)
@@ -95,10 +95,10 @@ parser.add_argument('--mcnconn',
                     type=int,
                     default=2)
 
-parser.add_argument('--num_tenants',
-                    dest="num_tenants",
+parser.add_argument('--mctenants',
+                    dest="mctenants",
                     type=int,
-                    help="Number of cloud tenants to emulate on each server",
+                    help="Number of memcache tenants to emulate on each server/client",
                     default=1)
 
 parser.add_argument('--startport',
@@ -219,27 +219,27 @@ class MemcachedCluster(Expt):
         # Setup interrupt affinity
         # Configure interrupts to only be sent to respective CPU cores
         # to which the tenants are pinned
-        if self.opts("num_tenants") >= len(avail_cpus):
+        if self.opts("mctenants") >= len(avail_cpus):
             tenant_cpus = avail_cpus
         else:
-            tenant_cpus = avail_cpus[:self.opts("num_tenants")]
+            tenant_cpus = avail_cpus[:self.opts("mctenants")]
 
         hlist.configure_iface_interrupt_affinity(tenant_cpus)
 
         # Start memcached on servers - one instance for each tenant, pinned to a
         # different CPU core
-        for tenant in xrange(0, self.opts("num_tenants")):
+        for tenant in xrange(0, self.opts("mctenants")):
             self.start_memcached(hservers, mem = 1024,
                                  port = start_port + tenant,
                                  threads = 1,
                                  cpus = [avail_cpus[tenant %
-                                         self.opts("num_tenants")]])
+                                         self.opts("mctenants")]])
 
         # Configure rate limits
         # On server, configure separate rate limit to each tenant's client
         # On client, configure separate rate limit to each tenant's server
-        total_rate = (self.opts("num_tenants") * len(hservers.lst) *
-                      len(hclients.lst) * self.opts("pair_rate"))
+        total_rate = (self.opts("mctenants") * len(hservers.lst) *
+                      len(hclients.lst) * self.opts("mc_pair_rate"))
         if self.opts("rl") == "htb":
             hlist.mc_add_htb_qdisc(str(total_rate) + "Mbit",
                                    self.opts("htb_mtu"))
@@ -255,7 +255,7 @@ class MemcachedCluster(Expt):
         #  (cli_id)) :  On client, this represents traffic to srv_id for tenant
         #               On server, this represents traffic to cli_id for tenant
 
-        for tenant in xrange(0, self.opts("num_tenants")):
+        for tenant in xrange(0, self.opts("mctenants")):
 
             for (srv_id, hserver) in enumerate(hservers.lst):
                 server_ip = socket.gethostbyname(hserver.hostname())
@@ -264,7 +264,7 @@ class MemcachedCluster(Expt):
                     client_ip = socket.gethostbyname(hclient.hostname())
 
                     srv_port = start_port + tenant
-                    rate_str = '%.3fMbit' % self.opts("pair_rate")
+                    rate_str = '%.3fMbit' % self.opts("mc_pair_rate")
                     klass = ((tenant * len(hservers.lst) * len(hclients.lst)) +
                              (srv_id * len(hclients.lst)) +
                              (cli_id))
@@ -277,10 +277,10 @@ class MemcachedCluster(Expt):
                                                  klass=klass,
                                                  htb_mtu=self.opts("htb_mtu"))
                     elif self.opts("rl") == "qfq":
-                        hclient.mc_add_qfq_class(rate=self.opts("pair_rate"),
+                        hclient.mc_add_qfq_class(rate=self.opts("mc_pair_rate"),
                                                  klass=klass,
                                                  mtu=self.opts("mtu"))
-                        hserver.mc_add_qfq_class(rate=self.opts("pair_rate"),
+                        hserver.mc_add_qfq_class(rate=self.opts("mc_pair_rate"),
                                                  klass=klass,
                                                  mtu=self.opts("mtu"))
                     # Client -> Server traffic
@@ -303,14 +303,14 @@ class MemcachedCluster(Expt):
         # pair, create a separate mcperf instance. This is required since mcperf
         # does not have an option to send requests randomly to the available
         # memcached servers.
-        for tenant in xrange(0, self.opts("num_tenants")):
+        for tenant in xrange(0, self.opts("mctenants")):
             for hserver in hservers.lst:
                 server_ip = socket.gethostbyname(hserver.hostname())
                 for (cli_id, hclient) in enumerate(hclients.lst):
 
                     # Index of tenant and client connecting to this particular
                     # server for this tenant.
-                    tenant_id = "%d_%d" % (tenant, self.opts("num_tenants"))
+                    tenant_id = "%d_%d" % (tenant, self.opts("mctenants"))
                     client_id = "%d_%d" % (cli_id, len(hclients.lst))
 
                     self.start_mcperf(hclient, server_ip, tenant_id, client_id,
