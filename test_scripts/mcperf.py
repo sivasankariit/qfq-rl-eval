@@ -211,22 +211,29 @@ class MemcachedCluster(Expt):
 
         hlist.configure_tcp_limit_output_bytes()
 
-        # Setup interrupt affinity
-        '''
-        TODO(siva): Configure interrupts to only be sent to respective CPU cores
-        to which the tenants are pinned.
-        '''
-
-        # Start memcached on servers - one instance for each tenant, pinned to a
-        # different CPU core
+        # Find available CPU cores for all tenants
         start_port = self.opts("startport")
         avail_cpus = [ x for x in xrange(0, config['NUM_CPUS'])
                              if x not in config['EXCLUDE_CPUS'] ]
+
+        # Setup interrupt affinity
+        # Configure interrupts to only be sent to respective CPU cores
+        # to which the tenants are pinned
+        if self.opts("num_tenants") >= len(avail_cpus):
+            tenant_cpus = avail_cpus
+        else:
+            tenant_cpus = avail_cpus[:self.opts("num_tenants")]
+
+        hlist.configure_iface_interrupt_affinity(tenant_cpus)
+
+        # Start memcached on servers - one instance for each tenant, pinned to a
+        # different CPU core
         for tenant in xrange(0, self.opts("num_tenants")):
             self.start_memcached(hservers, mem = 1024,
                                  port = start_port + tenant,
                                  threads = 1,
-                                 cpus = [avail_cpus[tenant]])
+                                 cpus = [avail_cpus[tenant %
+                                         self.opts("num_tenants")]])
 
         # Configure rate limits
         # On server, configure separate rate limit to each tenant's client
