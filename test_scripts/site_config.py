@@ -155,11 +155,15 @@ elif SITE == 'Siva-MC':
 
     # Server/client nodes
     config['DEFAULT_MC_SERVERS'] = ['192.168.2.64']
-    config['DEFAULT_MC_CLIENTS'] = ['192.168.2.80']
+    config['DEFAULT_MC_CLIENTS'] = ['192.168.2.80',
+                                    '192.168.2.108',
+                                    '192.168.2.109']
 
     # Interface details for each node
-    config['DEFAULT_DEV'] = { '192.168.2.64' : 'eth1',
-                              '192.168.2.80' : 'eth2' }
+    config['DEFAULT_DEV'] = { '192.168.2.64'  : 'eth1',
+                              '192.168.2.80'  : 'eth2',
+                              '192.168.2.108' : 'eth1',
+                              '192.168.2.109' : 'eth1' }
 
     # NIC details
     config['NIC_VENDOR'] = 'Intel'
@@ -172,21 +176,6 @@ elif SITE == 'Siva-MC':
     # CPUs available for tenants
     config['NUM_CPUS'] = 16
     config['EXCLUDE_CPUS'] = [2]
-
-    '''
-    CPU numbering on SEED testbed (dcswitch81):
-
-    (0  8)  (Socket 0, Core 0, two hyperthreads)
-    (4 12)  (Socket 0, Core 1, two hyperthreads)
-    (2 10)  (Socket 0, Core 2, two hyperthreads)
-    (6 14)  (Socket 0, Core 3, two hyperthreads)
-
-    (1  9)  (Socket 1, Core 0, two hyperthreads)
-    (5 13)  (Socket 1, Core 1, two hyperthreads)
-    (3 11)  (Socket 1, Core 2, two hyperthreads)
-    (7 15)  (Socket 1, Core 3, two hyperthreads)
-    '''
-    config['INTR_MAPPING'] = [0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,0]
 
     # Sniffer host with Myri10G sniffer
     config['SNIFFER_HOST'] = ''
