@@ -4,6 +4,7 @@ import argparse
 import multiprocessing
 import termcolor as T
 from expt import Expt
+from expt import progress
 from time import sleep
 from host import *
 from site_config import *
@@ -234,6 +235,37 @@ class MemcachedCluster(Expt):
                                  threads = 1,
                                  cpus = [avail_cpus[tenant %
                                          self.opts("mctenants")]])
+
+        # If mcworkload=get, first run mcperf with set requests to full up the
+        # cache.  For each (tenant, server) pair, create a separate mcperf
+        # instance on each client.
+        if self.opts("mcworkload") == "get":
+
+            hlist.mkdir(e("logs_unused"))
+            for tenant in xrange(0, self.opts("mctenants")):
+                for hserver in hservers.lst:
+                    server_ip = socket.gethostbyname(hserver.hostname())
+                    for (cli_id, hclient) in enumerate(hclients.lst):
+
+                        # Index of tenant and client connecting to this
+                        # particular server for this tenant.
+                        tenant_id = "%d_%d" % (tenant, self.opts("mctenants"))
+                        client_id = "%d_%d" % (cli_id, len(hclients.lst))
+
+                        self.start_mcperf(hclient, server_ip,
+                                          tenant_id, client_id,
+                                          port = start_port + tenant,
+                                          time = 250,
+                                          nconn = self.opts("mcnconn"),
+                                          mcrate = self.opts("mcrate"),
+                                          mcexp = self.opts("mcexp"),
+                                          workload = "set",
+                                          mcsize = self.opts("mcsize"),
+                                          cpus = [avail_cpus[tenant]],
+                                          dir=e('logs_unused'))
+
+            self.log(T.colored("Populating caches first", "blue"))
+            progress(255)
 
         # Configure rate limits
         # On server, configure separate rate limit to each tenant's client
