@@ -20,12 +20,20 @@ touch $dir/expt_config.txt
 echo "NUM_CPUS = ${NUM_CPUS}" >> $dir/expt_config.txt
 echo "EXCLUDE_CPUS = ${EXCLUDE_CPUS}" >> $dir/expt_config.txt
 mc_pair_rate=500
+trafgen_pair_rate=500
+trafgenproto="udp"
 mcsize=4096
+
+OLDIFS=$IFS;
+IFS=','
 for mcrate in 1000 3000 5000 7000; do
 for rl in none htb qfq; do
-for mctenants in 8 15; do
+for tenants in 8,1; do
+    set $tenants;
+    mctenants=$1
+    trafgentenants=$2
 for run in 1; do
-    exptid=memcached-rl-$rl-mcrate-$mcrate-mctenants-$mctenants-run-$run
+    exptid=memcached-rl-$rl-mcrate-$mcrate-mctenants-$mctenants-trafgentenants-$trafgentenants-run-$run
     mkdir -p $dir/$exptid
     chmod a+w $dir/$exptid
 
@@ -35,7 +43,7 @@ for run in 1; do
     chmod a+w expsift_tags
     echo "link_speed_mbps=10000" >> expsift_tags
     echo "nic_vendor=intel" >> expsift_tags
-    echo "workload=memcached_get" >> expsift_tags
+    echo "workload=memcached_set+trafgen_udp" >> expsift_tags
     echo "mtu=$mtu" >> expsift_tags
     echo "tso=off" >> expsift_tags
     echo "gso=off" >> expsift_tags
@@ -46,6 +54,9 @@ for run in 1; do
     echo "mc_pair_rate=$mc_pair_rate" >> expsift_tags
     echo "mcrate=$mcrate" >> expsift_tags
     echo "mctenants=$mctenants" >> expsift_tags
+    echo "trafgentenants=$trafgentenants" >> expsift_tags
+    echo "trafgenproto=$trafgenproto" >> expsift_tags
+    echo "trafgen_pair_rate=$trafgen_pair_rate" >> expsift_tags
     echo "run=$run" >> expsift_tags
     popd
 
@@ -55,11 +66,14 @@ for run in 1; do
         --rl $rl \
         --mc_pair_rate $mc_pair_rate \
         --mcrate $mcrate \
-        --mcworkload "get" \
+        --mcworkload "set" \
         --mtu $mtu \
         --htb-mtu $mtu \
         --mctenants $mctenants \
         --mcsize $mcsize \
+        --trafgentenants $trafgentenants \
+        --trafgenproto $trafgenproto \
+        --trafgen_pair_rate $trafgen_pair_rate \
         --outdir $dir/$exptid
 
     chmod a+w $dir/$exptid
@@ -67,6 +81,7 @@ done;
 done;
 done;
 done;
+IFS=$OLDIFS
 
 echo "Experiment results are in $dir"
 echo "started at $start"
