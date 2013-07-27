@@ -105,7 +105,25 @@ parser.add_argument('--mctenants',
 parser.add_argument('--startport',
                     dest="startport",
                     type=int,
+                    help="Port number for first memcached tenant on all servers",
                     default=5000)
+
+parser.add_argument('--trafgen_pair_rate',
+                    dest="trafgen_pair_rate",
+                    type=int,
+                    help="Rate limit for trafgen tenant's client-server pair (Mbps)",
+                    default=200)
+
+parser.add_argument('--trafgentenants',
+                    dest="trafgentenants",
+                    type=int,
+                    help="Number of trafgen tenants to emulate on each server/client",
+                    default=0)
+
+parser.add_argument('--trafgenproto',
+                    dest="trafgenproto",
+                    help="trafgen: Transport protocol (udp/tcp)",
+                    default="udp")
 
 args = parser.parse_args()
 
@@ -155,6 +173,23 @@ class MemcachedCluster(Expt):
         cmd += "> %s/mcperf-t%s_-c%s-%s.txt" % (dir, tenant_id,
                                                 client_id, server_ip)
         hclient.cmd_async(cmd)
+
+
+    def start_trafgen_client(self, hsrc, dst_ip, proto="udp",
+                             port=6000, mtu=1500, cpus=[1]):
+        cmd = "taskset -c %s " % ",".join([str(x) for x in cpus])
+        cmd += "%s -c %s -%s " % (config["TRAFGEN"], dst_ip, proto)
+        cmd += "-start_port %s -num_ports 1 " % port
+        cmd += "-send_size 1472 -sk_prio 1 -mtu %s > /dev/null 2>&1" % mtu
+        hsrc.cmd_async(cmd)
+
+
+    def start_trafgen_server(self, hlist, proto="udp", port=6000, cpus=[1]):
+        cmd  = "taskset -c %s " % ",".join([str(x) for x in cpus])
+        cmd += "%s -s -%s -start_port %s " % (config["TRAFGEN"], proto, port)
+        cmd += "-num_ports 1 > /dev/null 2>&1"
+        for h in hlist.lst:
+            h.cmd_async(cmd)
 
 
     def start(self):
@@ -220,27 +255,50 @@ class MemcachedCluster(Expt):
         # Setup interrupt affinity
         # Configure interrupts to only be sent to respective CPU cores
         # to which the tenants are pinned
-        if self.opts("mctenants") >= len(avail_cpus):
+        if self.opts("mctenants") + self.opts("trafgentenants") >= len(avail_cpus):
             tenant_cpus = avail_cpus
+            self.log(T.colored("WARNING: Multiple tenants sharing CPU cores", "red"))
         else:
-            tenant_cpus = avail_cpus[:self.opts("mctenants")]
+            tenant_cpus = avail_cpus[:self.opts("mctenants") + 2 * self.opts("trafgentenants")]
 
         hlist.configure_iface_interrupt_affinity(tenant_cpus)
 
+        # NOTE: Tenant to CPU cores mapping:
+        # -- First 'mctenants' CPU cores are used to pin memcached or mcperf
+        #    instances on servers and clients respectively.
+        # -- Next 'trafgentenants' CPU cores are used to bind trafgen sink
+        #    processes for each tenant on each host
+        #    Last 'trafgentenants' CPU cores are used to bind trafgen generator
+        #    processes for each tenant on each host
+        #    So, each trafgen tenant requires 2 CPU cores (1 for sink and 1 for
+        #    generator)
+
         # Start memcached on servers - one instance for each tenant, pinned to a
         # different CPU core
+        assigned_cpus = 0
         for tenant in xrange(0, self.opts("mctenants")):
             self.start_memcached(hservers, mem = 1024,
                                  port = start_port + tenant,
                                  threads = 1,
-                                 cpus = [avail_cpus[tenant %
-                                         self.opts("mctenants")]])
+                                 cpus = [avail_cpus[assigned_cpus %
+                                                    len(avail_cpus)]])
+            assigned_cpus += 1
+
+        # Start trafgen servers/sinks - one instance for each tenant, pinned to
+        # a different CPU core on each host
+        for tenant in xrange(0, self.opts("trafgentenants")):
+            self.start_trafgen_server(hlist, proto=self.opts("trafgenproto"),
+                                      port = start_port + 1000 + tenant,
+                                      cpus = [avail_cpus[assigned_cpus %
+                                                         len(avail_cpus)]])
+            assigned_cpus += 1
 
         # If mcworkload=get, first run mcperf with set requests to full up the
         # cache.  For each (tenant, server) pair, create a separate mcperf
         # instance on each client.
         if self.opts("mcworkload") == "get":
 
+            tmp_assigned_cpus = 0
             hlist.mkdir(e("logs_unused"))
             for tenant in xrange(0, self.opts("mctenants")):
                 for hserver in hservers.lst:
@@ -261,8 +319,10 @@ class MemcachedCluster(Expt):
                                           mcexp = self.opts("mcexp"),
                                           workload = "set",
                                           mcsize = self.opts("mcsize"),
-                                          cpus = [avail_cpus[tenant]],
+                                          cpus = [avail_cpus[tmp_assigned_cpus %
+                                                             len(avail_cpus)]],
                                           dir=e('logs_unused'))
+                tmp_assigned_cpus += 1
 
             self.log(T.colored("Populating caches first", "blue"))
             progress(255)
@@ -331,10 +391,30 @@ class MemcachedCluster(Expt):
                     duration=config['SNIFFER_DURATION'])
         sleep(1)
 
+        # Start trafgen clients to generate background all-to-all traffic.
+        # For each (tenant, destination) pair, create a separate trafgen
+        # instance on the source host. This is required since trafgen currently
+        # only supports a single destination per instance.
+        for tenant in xrange(0, self.opts("trafgentenants")):
+            for hsrc in hlist.lst:
+                for hdst in hlist.lst:
+                    if hsrc == hdst:
+                        continue
+                    dst_ip = socket.gethostbyname(hdst.hostname())
+
+                    self.start_trafgen_client(hsrc, dst_ip,
+                                              proto=self.opts("trafgenproto"),
+                                              port = start_port + 1000 + tenant,
+                                              mtu = self.opts("mtu"),
+                                              cpus = [avail_cpus[assigned_cpus %
+                                                      len(avail_cpus)]])
+            assigned_cpus += 1
+
         # Start mcperf clients to generate requests. For each (tenant, server)
         # pair, create a separate mcperf instance. This is required since mcperf
         # does not have an option to send requests randomly to the available
         # memcached servers.
+        tmp_assigned_cpus = 0
         for tenant in xrange(0, self.opts("mctenants")):
             for hserver in hservers.lst:
                 server_ip = socket.gethostbyname(hserver.hostname())
@@ -353,8 +433,10 @@ class MemcachedCluster(Expt):
                                       mcexp = self.opts("mcexp"),
                                       workload = self.opts("mcworkload"),
                                       mcsize = self.opts("mcsize"),
-                                      cpus = [avail_cpus[tenant]],
+                                      cpus = [avail_cpus[tmp_assigned_cpus %
+                                                         len(avail_cpus)]],
                                       dir=e('logs'))
+            tmp_assigned_cpus += 1
 
         self.hservers = hservers
         self.hclients = hclients
@@ -366,6 +448,7 @@ class MemcachedCluster(Expt):
     def stop(self):
         self.hlist.stop_mpstat()
         self.hlist.killall("memcached mcperf")
+        self.hlist.stop_trafgen()
         self.hlist.remove_qdiscs()
         self.hlist.rmmod_qfq()
         if self.opts("sniffer"):

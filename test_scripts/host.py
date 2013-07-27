@@ -483,7 +483,7 @@ class Host(object):
         return
 
     def stop_trafgen(self):
-        self.cmd("sudo killall -9 trafgen")
+        self.cmd("sudo killall -9 %s" % config["TRAFGEN"])
 
     def start_trafgen_server(self, mode, startport, numports):
         cmd = "%s -s -%s -start_port %s -num_ports %s > /dev/null 2>&1"
