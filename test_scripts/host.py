@@ -233,7 +233,8 @@ class Host(object):
         c  = "sudo %s -s filter show dev %s > %s/htb-filter.txt" % (config['TC'], dev, dir)
         self.cmd(c)
 
-    def mc_add_htb_qdisc(self, rate='5Gbit', mtu=1500):
+    def mc_add_htb_qdisc(self, mtu=1500):
+        # Default qdisc class has rate limit of 100Mbit
         iface = self.get_10g_dev()
         self.remove_qdiscs()
         self.rmmod_qfq()
@@ -241,7 +242,7 @@ class Host(object):
               % (config['TC'], iface))
         c += ("sudo %s class add dev %s classid 1:1 parent 1: "
               % (config['TC'], iface))
-        c += "htb rate %s mtu %s burst 15k;" % (rate, mtu)
+        c += "htb rate 100Mbit mtu %s burst 15k;" % mtu
         self.cmd(c)
 
     def mc_add_qfq_qdisc(self, mtu=1500):
@@ -274,21 +275,21 @@ class Host(object):
               % (config['TC'], dev))
         c += "u32 match ip dst %s match ip " % dst_ip
         if sport:
-            c += "sport %d 0xffff flowid 1:%s" % (sport, klass)
+            c += "sport %d 0xffff flowid 1:%x" % (sport, klass)
         elif dport:
-            c += "dport %d 0xffff flowid 1:%s" % (dport, klass)
+            c += "dport %d 0xffff flowid 1:%x" % (dport, klass)
         self.cmd(c)
 
     def mc_add_htb_class(self, rate='5Gbit', ceil='5Gbit', klass=5000, htb_mtu=1500):
         dev = self.get_10g_dev()
-        c  = ("sudo %s class add dev %s classid 1:%d parent 1: "
+        c  = ("sudo %s class add dev %s classid 1:%x parent 1: "
              % (config['TC'], dev, klass))
         c += "htb rate %s ceil %s mtu %s burst 15k;" % (rate, ceil, htb_mtu)
         self.cmd(c)
 
     def mc_add_qfq_class(self, rate='5Gbit', klass=5000, mtu=1500):
         dev = self.get_10g_dev()
-        c  = ("sudo %s class add dev %s classid 1:%d parent 1: "
+        c  = ("sudo %s class add dev %s classid 1:%x parent 1: "
               % (config['TC'], dev, klass))
         c += "qfq weight %s maxpkt %s;" % (rate, mtu)
         c += ("sudo %s qdisc add dev %s parent 1:%d pfifo limit 200;"
