@@ -328,24 +328,37 @@ class MemcachedCluster(Expt):
             progress(255)
 
         # Configure rate limits
-        # On server, configure separate rate limit to each tenant's client
-        # On client, configure separate rate limit to each tenant's server
-        total_rate = (self.opts("mctenants") * len(hservers.lst) *
-                      len(hclients.lst) * self.opts("mc_pair_rate"))
+        # mcperf tenants:
+        # On server, configure separate rate limit to each mctenant's client
+        # On client, configure separate rate limit to each mctenant's server
+        # trafgen tenants:
+        # On each host, configure separate rate limits for traffic to each
+        # other host, for each trafgentenant
+        total_rate_trafgen = (self.opts("trafgentenants") *
+                              (len(hlist.lst) - 1) *
+                              self.opts("trafgen_pair_rate"))
+        total_rate_mc_client = (self.opts("mctenants") * len(hservers.lst) *
+                                self.opts("mc_pair_rate") + total_rate_trafgen)
+        total_rate_mc_server = (self.opts("mctenants") * len(hclients.lst) *
+                                self.opts("mc_pair_rate") + total_rate_trafgen)
         if self.opts("rl") == "htb":
-            hlist.mc_add_htb_qdisc(str(total_rate) + "Mbit",
-                                   self.opts("htb_mtu"))
+            hlist.mc_add_htb_qdisc(self.opts("htb_mtu"))
         elif self.opts("rl") == "qfq":
             hlist.mc_add_qfq_qdisc(self.opts("mtu"))
 
         # Qdisc classes
         # class 1 : default class
-        # Separate class for each (tenant, srv_id, cli_id) tuple
+        # Separate class for each (mctenant, srv_id, cli_id) tuple
         # (start_port +
         #  (tenant * num_servers * num_clients) +
         #  (srv_id * num_clients) +
         #  (cli_id)) :  On client, this represents traffic to srv_id for tenant
         #               On server, this represents traffic to cli_id for tenant
+        # Separate class for each (trafgentenant, hsrc, hdst) tuple
+        # (start_port + 10000 +
+        #  (tenant * num_hosts * (num_hosts - 1)) +
+        #  (src_id * (num_hosts - 1)) +
+        #  (dst_id)) :  Traffic from src_host to dst_host for each tenant
 
         for tenant in xrange(0, self.opts("mctenants")):
 
@@ -357,7 +370,8 @@ class MemcachedCluster(Expt):
 
                     srv_port = start_port + tenant
                     rate_str = '%.3fMbit' % self.opts("mc_pair_rate")
-                    klass = ((tenant * len(hservers.lst) * len(hclients.lst)) +
+                    klass = (start_port +
+                             (tenant * len(hservers.lst) * len(hclients.lst)) +
                              (srv_id * len(hclients.lst)) +
                              (cli_id))
 
@@ -375,12 +389,58 @@ class MemcachedCluster(Expt):
                         hserver.mc_add_qfq_class(rate=self.opts("mc_pair_rate"),
                                                  klass=klass,
                                                  mtu=self.opts("mtu"))
-                    # Client -> Server traffic
-                    hclient.mc_add_qdisc_filter(server_ip, sport=0,
-                                                dport=srv_port, klass=klass)
-                    # Server -> Client traffic
-                    hserver.mc_add_qdisc_filter(client_ip, sport=srv_port,
-                                                dport=0, klass=klass)
+
+                    if (self.opts("rl") == "htb" or
+                        self.opts("rl") == "qfq"):
+                        # Client -> Server traffic
+                        hclient.mc_add_qdisc_filter(server_ip, sport=0,
+                                                    dport=srv_port, klass=klass)
+                        # Server -> Client traffic
+                        hserver.mc_add_qdisc_filter(client_ip, sport=srv_port,
+                                                    dport=0, klass=klass)
+
+        for tenant in xrange(0, self.opts("trafgentenants")):
+            trafgen_port = start_port + 1000 + tenant
+            for (src_id, hsrc) in enumerate(hlist.lst):
+                src_ip = socket.gethostbyname(hsrc.hostname())
+                for (dst_id, hdst) in enumerate(hlist.lst):
+                    if hsrc == hdst:
+                        continue
+
+                    # NOTE: Some klass ID's would be unused (when src_id ==
+                    # dst_id).
+                    # NOTE: Trafgen server -> client traffic (only ACKs) is
+                    # allocated a rate limit of only 5Mbit.
+                    dst_ip = socket.gethostbyname(hdst.hostname())
+                    rate_str = '%.3fMbit' % self.opts("trafgen_pair_rate")
+                    rate_str_acks = '5Mbit'
+                    klass = (start_port + 10000 +
+                             (tenant * len(hlist.lst) * len(hlist.lst)) +
+                             (src_id * len(hlist.lst)) +
+                             (dst_id))
+
+                    if self.opts("rl") == "htb":
+                        hsrc.mc_add_htb_class(rate=rate_str, ceil=rate_str,
+                                              klass=klass,
+                                              htb_mtu=self.opts("htb_mtu"))
+                        hdst.mc_add_htb_class(rate=rate_str_acks,
+                                              ceil=rate_str_acks, klass=klass,
+                                              htb_mtu=self.opts("htb_mtu"))
+                    elif self.opts("rl") == "qfq":
+                        hsrc.mc_add_qfq_class(rate=self.opts("trafgen_pair_rate"),
+                                              klass=klass, mtu=self.opts("mtu"))
+                        hdst.mc_add_qfq_class(rate=5, klass=klass,
+                                              mtu=self.opts("mtu"))
+
+                    if (self.opts("rl") == "htb" or
+                        self.opts("rl") == "qfq"):
+                        # Trafgen client -> server traffic filter
+                        hsrc.mc_add_qdisc_filter(dst_ip, sport=0,
+                                                 dport=trafgen_port, klass=klass)
+                        # Trafgen server -> client traffic filter (only affects ACKs)
+                        hdst.mc_add_qdisc_filter(src_ip, sport=trafgen_port,
+                                                 dport=0, klass=klass)
+
 
         hlist.start_bw_monitor(e('logs'))
         hlist.start_mpstat(e('logs'))
