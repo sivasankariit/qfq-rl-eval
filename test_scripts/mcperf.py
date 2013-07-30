@@ -60,11 +60,17 @@ parser.add_argument('--sniffer',
                     help="The sniffer machine to capture packet timings",
                     default='')
 
-parser.add_argument('--mc_pair_rate',
-                    dest="mc_pair_rate",
+parser.add_argument('--mc_total_rate_server',
+                    dest="mc_total_rate_server",
                     type=int,
-                    help="Rate limit for each tenant's server-client traffic (Mbps)",
-                    default=200)
+                    help="Total rate limit for mcperf traffic on each mc server(Mbps)",
+                    default=3000)
+
+parser.add_argument('--mc_total_rate_client',
+                    dest="mc_total_rate_client",
+                    type=int,
+                    help="Total rate limit for mcperf traffic on each mc client(Mbps)",
+                    default=3000)
 
 parser.add_argument('--mcrate',
                     dest="mcrate",
@@ -108,11 +114,11 @@ parser.add_argument('--startport',
                     help="Port number for first memcached tenant on all servers",
                     default=5000)
 
-parser.add_argument('--trafgen_pair_rate',
-                    dest="trafgen_pair_rate",
+parser.add_argument('--trafgen_total_rate',
+                    dest="trafgen_total_rate",
                     type=int,
-                    help="Rate limit for trafgen tenant's client-server pair (Mbps)",
-                    default=200)
+                    help="Total rate limit for trafgen traffic on each node (Mbps)",
+                    default=4000)
 
 parser.add_argument('--trafgentenants',
                     dest="trafgentenants",
@@ -313,7 +319,7 @@ class MemcachedCluster(Expt):
                         self.start_mcperf(hclient, server_ip,
                                           tenant_id, client_id,
                                           port = start_port + tenant,
-                                          time = 250,
+                                          time = 300,
                                           nconn = self.opts("mcnconn"),
                                           mcrate = self.opts("mcrate"),
                                           mcexp = self.opts("mcexp"),
@@ -325,7 +331,7 @@ class MemcachedCluster(Expt):
                 tmp_assigned_cpus += 1
 
             self.log(T.colored("Populating caches first", "blue"))
-            progress(255)
+            progress(305)
 
         # Configure rate limits
         # mcperf tenants:
@@ -334,15 +340,18 @@ class MemcachedCluster(Expt):
         # trafgen tenants:
         # On each host, configure separate rate limits for traffic to each
         # other host, for each trafgentenant
-        total_rate_trafgen = (self.opts("trafgentenants") *
-                              (len(hlist.lst) - 1) *
-                              self.opts("trafgen_pair_rate"))
-        total_rate_mc_client = (self.opts("mctenants") * len(hservers.lst) *
-                                self.opts("mc_pair_rate") + total_rate_trafgen)
-        total_rate_mc_server = (self.opts("mctenants") * len(hclients.lst) *
-                                self.opts("mc_pair_rate") + total_rate_trafgen)
-        self.log(T.colored("Total rate mc client = %s" % total_rate_mc_client, "blue"))
-        self.log(T.colored("Total rate mc server = %s" % total_rate_mc_server, "blue"))
+        trafgen_pair_rate = (self.opts("trafgen_total_rate") * 1.0 /
+                             (self.opts("trafgentenants") * (len(hlist.lst) - 1)))
+        # Client to server traffic
+        mc_pair_rate_client = (self.opts("mc_total_rate_client") * 1.0 /
+                               (self.opts("mctenants") * len(hservers.lst)))
+        # Server to client traffic
+        mc_pair_rate_server = (self.opts("mc_total_rate_server") * 1.0 /
+                               (self.opts("mctenants") * len(hclients.lst)))
+
+        self.log(T.colored("Pair rate mc client = %s" % mc_pair_rate_client, "blue"))
+        self.log(T.colored("Pair rate mc server = %s" % mc_pair_rate_server, "blue"))
+        self.log(T.colored("Trafgen pair rate = %s" % trafgen_pair_rate, "blue"))
         if self.opts("rl") == "htb":
             hlist.mc_add_htb_qdisc(self.opts("htb_mtu"))
         elif self.opts("rl") == "qfq":
@@ -371,24 +380,27 @@ class MemcachedCluster(Expt):
                     client_ip = socket.gethostbyname(hclient.hostname())
 
                     srv_port = start_port + tenant
-                    rate_str = '%.3fMbit' % self.opts("mc_pair_rate")
+                    rate_str_client = '%.3fMbit' % mc_pair_rate_client
+                    rate_str_server = '%.3fMbit' % mc_pair_rate_server
                     klass = (start_port +
                              (tenant * len(hservers.lst) * len(hclients.lst)) +
                              (srv_id * len(hclients.lst)) +
                              (cli_id))
 
                     if self.opts("rl") == "htb":
-                        hclient.mc_add_htb_class(rate=rate_str, ceil=rate_str,
+                        hclient.mc_add_htb_class(rate=rate_str_client,
+                                                 ceil=rate_str_client,
                                                  klass=klass,
                                                  htb_mtu=self.opts("htb_mtu"))
-                        hserver.mc_add_htb_class(rate=rate_str, ceil=rate_str,
+                        hserver.mc_add_htb_class(rate=rate_str_server,
+                                                 ceil=rate_str_server,
                                                  klass=klass,
                                                  htb_mtu=self.opts("htb_mtu"))
                     elif self.opts("rl") == "qfq":
-                        hclient.mc_add_qfq_class(rate=self.opts("mc_pair_rate"),
+                        hclient.mc_add_qfq_class(rate=mc_pair_rate_client,
                                                  klass=klass,
                                                  mtu=self.opts("mtu"))
-                        hserver.mc_add_qfq_class(rate=self.opts("mc_pair_rate"),
+                        hserver.mc_add_qfq_class(rate=mc_pair_rate_server,
                                                  klass=klass,
                                                  mtu=self.opts("mtu"))
 
@@ -414,7 +426,7 @@ class MemcachedCluster(Expt):
                     # NOTE: Trafgen server -> client traffic (only ACKs) is
                     # allocated a rate limit of only 5Mbit.
                     dst_ip = socket.gethostbyname(hdst.hostname())
-                    rate_str = '%.3fMbit' % self.opts("trafgen_pair_rate")
+                    rate_str = '%.3fMbit' % trafgen_pair_rate
                     rate_str_acks = '5Mbit'
                     klass = (start_port + 10000 +
                              (tenant * len(hlist.lst) * len(hlist.lst)) +
@@ -429,7 +441,7 @@ class MemcachedCluster(Expt):
                                               ceil=rate_str_acks, klass=klass,
                                               htb_mtu=self.opts("htb_mtu"))
                     elif self.opts("rl") == "qfq":
-                        hsrc.mc_add_qfq_class(rate=self.opts("trafgen_pair_rate"),
+                        hsrc.mc_add_qfq_class(rate=trafgen_pair_rate,
                                               klass=klass, mtu=self.opts("mtu"))
                         hdst.mc_add_qfq_class(rate=5, klass=klass,
                                               mtu=self.opts("mtu"))
