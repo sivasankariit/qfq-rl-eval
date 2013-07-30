@@ -46,7 +46,9 @@ stats_files = {'sniffer' : ['snf_stats.txt',
                'mpstat_mc' : ['cpu_util.txt'],
                'mcperf' : ['mcperf.txt']}
 
-memcached_workloads = ['memcached_set', 'memcached_get']
+memcached_workloads = ['memcached_set', 'memcached_get',
+                       'memcached_set+trafgen_udp',
+                       'memcached_get+trafgen_udp']
 trafgen_workloads = ['trafgen_tcp', 'trafgen_udp']
 
 # Used to load data from a picked file to variables

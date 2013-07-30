@@ -28,7 +28,9 @@ parser.add_argument('--force_replot', '-f', dest='force_replot',
                     action="store_true")
 
 
-memcached_workloads = ['memcached_set', 'memcached_get']
+memcached_workloads = ['memcached_set', 'memcached_get',
+                       'memcached_set+trafgen_udp',
+                       'memcached_get+trafgen_udp']
 trafgen_workloads = ['trafgen_tcp', 'trafgen_udp']
 
 
