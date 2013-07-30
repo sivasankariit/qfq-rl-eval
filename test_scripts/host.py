@@ -292,7 +292,7 @@ class Host(object):
         c  = ("sudo %s class add dev %s classid 1:%x parent 1: "
               % (config['TC'], dev, klass))
         c += "qfq weight %s maxpkt %s;" % (rate, mtu)
-        c += ("sudo %s qdisc add dev %s parent 1:%d pfifo limit 200;"
+        c += ("sudo %s qdisc add dev %s parent 1:%x pfifo limit 200;"
               % (config['TC'], dev, klass))
         self.cmd(c)
 
