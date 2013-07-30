@@ -341,6 +341,8 @@ class MemcachedCluster(Expt):
                                 self.opts("mc_pair_rate") + total_rate_trafgen)
         total_rate_mc_server = (self.opts("mctenants") * len(hclients.lst) *
                                 self.opts("mc_pair_rate") + total_rate_trafgen)
+        self.log(T.colored("Total rate mc client = %s" % total_rate_mc_client, "blue"))
+        self.log(T.colored("Total rate mc server = %s" % total_rate_mc_server, "blue"))
         if self.opts("rl") == "htb":
             hlist.mc_add_htb_qdisc(self.opts("htb_mtu"))
         elif self.opts("rl") == "qfq":
