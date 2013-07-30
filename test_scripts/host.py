@@ -291,7 +291,7 @@ class Host(object):
         dev = self.get_10g_dev()
         c  = ("sudo %s class add dev %s classid 1:%x parent 1: "
               % (config['TC'], dev, klass))
-        c += "qfq weight %s maxpkt %s;" % (rate, mtu)
+        c += "qfq weight %s maxpkt %s;" % (int(rate), mtu)
         c += ("sudo %s qdisc add dev %s parent 1:%x pfifo limit 200;"
               % (config['TC'], dev, klass))
         self.cmd(c)
