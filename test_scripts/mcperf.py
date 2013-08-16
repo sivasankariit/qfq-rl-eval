@@ -10,6 +10,8 @@ from host import *
 from site_config import *
 import os
 
+MC_PREPOPULATE_TIME = 200
+
 parser = argparse.ArgumentParser(description="Memcached test for various rate limiters.")
 
 parser.add_argument('--htb-mtu',
@@ -319,7 +321,7 @@ class MemcachedCluster(Expt):
                         self.start_mcperf(hclient, server_ip,
                                           tenant_id, client_id,
                                           port = start_port + tenant,
-                                          time = 300,
+                                          time = MC_PREPOPULATE_TIME,
                                           nconn = self.opts("mcnconn"),
                                           mcrate = self.opts("mcrate"),
                                           mcexp = self.opts("mcexp"),
@@ -331,7 +333,7 @@ class MemcachedCluster(Expt):
                 tmp_assigned_cpus += 1
 
             self.log(T.colored("Populating caches first", "blue"))
-            progress(305)
+            progress(MC_PREPOPULATE_TIME + 5)
 
         # Configure rate limits
         # mcperf tenants:
