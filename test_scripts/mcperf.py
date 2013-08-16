@@ -261,7 +261,7 @@ class MemcachedCluster(Expt):
         # Setup interrupt affinity
         # Configure interrupts to only be sent to respective CPU cores
         # to which the tenants are pinned
-        if self.opts("mctenants") + self.opts("trafgentenants") >= len(avail_cpus):
+        if self.opts("mctenants") + 2*self.opts("trafgentenants") > len(avail_cpus):
             tenant_cpus = avail_cpus
             self.log(T.colored("WARNING: Multiple tenants sharing CPU cores", "red"))
         else:
