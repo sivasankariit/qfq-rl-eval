@@ -463,6 +463,7 @@ class MemcachedCluster(Expt):
 
         hlist.start_bw_monitor(e('logs'))
         hlist.start_mpstat(e('logs'))
+        hlist.start_perf_monitor(e('logs'), self.opts("t"))
         hlist.set_mtu(self.opts("mtu"))
         if sniffer:
             hsniffer.start_sniffer_delayed(e('logs', tmpdir=config['SNIFFER_TMPDIR']),
