@@ -156,8 +156,9 @@ class MemcachedCluster(Expt):
 
 
     def start_mcperf(self, hclient, server_ip, tenant_id="0_1", client_id="0_1",
-                     port=5000, time=60, nconn=1, mcrate=500, mcexp=False,
-                     workload="get", mcsize=1024, cpus=[1], dir="/tmp"):
+                     seed=0, port=5000, time=60, nconn=1, mcrate=500,
+                     mcexp=False, workload="get", mcsize=1024, cpus=[1],
+                     dir="/tmp"):
 
         # Divide rate equally among connections from this mcperf instance to a
         # particular server
@@ -176,6 +177,8 @@ class MemcachedCluster(Expt):
         cmd += "--call-rate %s " % rate
         cmd += "--num-conns %d " % nconn
         cmd += "--conn-rate %d " % nconn
+        cmd += "--client %d/%d " % (seed, 1) # mcperf uses client.id as random
+                                            # number generator seed.
         cmd += "-m %s " % workload
         cmd += "-H -T %d " % time
         cmd += "> %s/mcperf-t%s_-c%s-%s.txt" % (dir, tenant_id,
@@ -309,7 +312,7 @@ class MemcachedCluster(Expt):
             tmp_assigned_cpus = 0
             hlist.mkdir(e("logs_unused"))
             for tenant in xrange(0, self.opts("mctenants")):
-                for hserver in hservers.lst:
+                for (srv_id, hserver) in enumerate(hservers.lst):
                     server_ip = socket.gethostbyname(hserver.hostname())
                     for (cli_id, hclient) in enumerate(hclients.lst):
 
@@ -318,8 +321,17 @@ class MemcachedCluster(Expt):
                         tenant_id = "%d_%d" % (tenant, self.opts("mctenants"))
                         client_id = "%d_%d" % (cli_id, len(hclients.lst))
 
+                        # We use the traffic class number as the seed for the
+                        # random number generator so that all instances
+                        # generate unique random number sequences.
+                        seed = (start_port +
+                                (tenant * len(hservers.lst) * len(hclients.lst)) +
+                                (srv_id * len(hclients.lst)) +
+                                (cli_id))
+
                         self.start_mcperf(hclient, server_ip,
                                           tenant_id, client_id,
+                                          seed = seed,
                                           port = start_port + tenant,
                                           time = MC_PREPOPULATE_TIME,
                                           nconn = self.opts("mcnconn"),
@@ -505,7 +517,19 @@ class MemcachedCluster(Expt):
                     tenant_id = "%d_%d" % (tenant, self.opts("mctenants"))
                     client_id = "%d_%d" % (cli_id, len(hclients.lst))
 
+                    # We use traffic class number as the seed for the
+                    # random number generator so that all instances
+                    # generate unique random number sequences. But we want to
+                    # use a different seed that that used for the initial "set"
+                    # workload for populating caches. So we increment the
+                    # respective class numbers by say 11213 to get the seed.
+                    seed = (start_port + 11213 +
+                            (tenant * len(hservers.lst) * len(hclients.lst)) +
+                            (srv_id * len(hclients.lst)) +
+                            (cli_id))
+
                     self.start_mcperf(hclient, server_ip, tenant_id, client_id,
+                                      seed = seed,
                                       port = start_port + tenant,
                                       time = self.opts("t"),
                                       nconn = self.opts("mcnconn"),
