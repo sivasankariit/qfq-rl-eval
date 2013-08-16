@@ -342,14 +342,17 @@ class MemcachedCluster(Expt):
         # trafgen tenants:
         # On each host, configure separate rate limits for traffic to each
         # other host, for each trafgentenant
-        trafgen_pair_rate = (self.opts("trafgen_total_rate") * 1.0 /
-                             (self.opts("trafgentenants") * (len(hlist.lst) - 1)))
+        trafgen_pair_rate = (0 if not self.opts("trafgentenants") else
+                             (self.opts("trafgen_total_rate") * 1.0 /
+                              (self.opts("trafgentenants") * (len(hlist.lst) - 1))))
         # Client to server traffic
-        mc_pair_rate_client = (self.opts("mc_total_rate_client") * 1.0 /
-                               (self.opts("mctenants") * len(hservers.lst)))
+        mc_pair_rate_client = (0 if not self.opts("mctenants") else
+                               (self.opts("mc_total_rate_client") * 1.0 /
+                                (self.opts("mctenants") * len(hservers.lst))))
         # Server to client traffic
-        mc_pair_rate_server = (self.opts("mc_total_rate_server") * 1.0 /
-                               (self.opts("mctenants") * len(hclients.lst)))
+        mc_pair_rate_server = (0 if not self.opts("mctenants") else
+                               (self.opts("mc_total_rate_server") * 1.0 /
+                                (self.opts("mctenants") * len(hclients.lst))))
 
         self.log(T.colored("Pair rate mc client = %s" % mc_pair_rate_client, "blue"))
         self.log(T.colored("Pair rate mc server = %s" % mc_pair_rate_server, "blue"))
