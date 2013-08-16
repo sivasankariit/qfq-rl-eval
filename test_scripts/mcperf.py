@@ -283,7 +283,7 @@ class MemcachedCluster(Expt):
         # different CPU core
         assigned_cpus = 0
         for tenant in xrange(0, self.opts("mctenants")):
-            self.start_memcached(hservers, mem = 1024,
+            self.start_memcached(hservers, mem = 2048,
                                  port = start_port + tenant,
                                  threads = 1,
                                  cpus = [avail_cpus[assigned_cpus %
