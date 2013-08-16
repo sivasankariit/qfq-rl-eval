@@ -557,7 +557,9 @@ class Host(object):
         dir = os.path.abspath(dir)
         path = os.path.join(dir, "perf.txt")
         events = [
+            "cycles",
             "instructions",
+            "cache-references",
             "cache-misses",
             "branch-instructions",
             "branch-misses",
@@ -569,11 +571,14 @@ class Host(object):
             "L1-dcache-prefetch-misses",
             "L1-icache-loads",
             "L1-icache-load-misses",
+            "context-switches",
+            "cpu-migrations",
+            "page-faults",
             ]
         # This command will use debug counters, so you can't run it when
         # running oprofile
         events = ','.join(events)
-        cmd = "(perf stat -e %s -a sleep %d) > %s 2>&1" % (events, time, path)
+        cmd = "(sudo perf stat -e %s -a -A sleep %d) > %s 2>&1" % (events, time, path)
         return self.cmd_async(cmd)
 
     def start_qfq_monitor(self, dir):
