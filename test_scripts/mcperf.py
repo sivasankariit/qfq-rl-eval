@@ -36,7 +36,7 @@ parser.add_argument('--outdir',
 parser.add_argument('--rl',
                     dest="rl",
                     help="Which rate limiter to use",
-                    choices=["htb", "qfq", "none"],
+                    choices=["htb", "qfq", "eyeq", "none"],
                     default="")
 
 parser.add_argument('--time', '-t',
@@ -373,6 +373,8 @@ class MemcachedCluster(Expt):
             hlist.mc_add_htb_qdisc(self.opts("htb_mtu"))
         elif self.opts("rl") == "qfq":
             hlist.mc_add_qfq_qdisc(self.opts("mtu"))
+        elif self.opts("rl") == "eyeq":
+            hlist.mc_add_htb_qdisc(self.opts("mtu"), True)
 
         # Qdisc classes
         # class 1 : default class
@@ -404,7 +406,7 @@ class MemcachedCluster(Expt):
                              (srv_id * len(hclients.lst)) +
                              (cli_id))
 
-                    if self.opts("rl") == "htb":
+                    if self.opts("rl") in ["htb", "eyeq"]:
                         hclient.mc_add_htb_class(rate=rate_str_client,
                                                  ceil=rate_str_client,
                                                  klass=klass,
@@ -421,8 +423,7 @@ class MemcachedCluster(Expt):
                                                  klass=klass,
                                                  mtu=self.opts("mtu"))
 
-                    if (self.opts("rl") == "htb" or
-                        self.opts("rl") == "qfq"):
+                    if self.opts("rl") in ["htb", "eyeq", "qfq"]:
                         # Client -> Server traffic
                         hclient.mc_add_qdisc_filter(server_ip, sport=0,
                                                     dport=srv_port, klass=klass)
@@ -450,7 +451,7 @@ class MemcachedCluster(Expt):
                              (src_id * len(hlist.lst)) +
                              (dst_id))
 
-                    if self.opts("rl") == "htb":
+                    if self.opts("rl") in ["htb", "eyeq"]:
                         hsrc.mc_add_htb_class(rate=rate_str, ceil=rate_str,
                                               klass=klass,
                                               htb_mtu=self.opts("htb_mtu"))
@@ -463,8 +464,7 @@ class MemcachedCluster(Expt):
                         hdst.mc_add_qfq_class(rate=5, klass=klass,
                                               mtu=self.opts("mtu"))
 
-                    if (self.opts("rl") == "htb" or
-                        self.opts("rl") == "qfq"):
+                    if self.opts("rl") in ["htb", "eyeq", "qfq"]:
                         # Trafgen client -> server traffic filter
                         hsrc.mc_add_qdisc_filter(dst_ip, sport=0,
                                                  dport=trafgen_port, klass=klass)
@@ -555,6 +555,7 @@ class MemcachedCluster(Expt):
         self.hlist.stop_trafgen()
         self.hlist.remove_qdiscs()
         self.hlist.rmmod_qfq()
+        self.hlist.rmmod_eyeq()
         if self.opts("sniffer"):
             self.hsniffer.copy_local(e('', tmpdir=config['SNIFFER_TMPDIR']),
                                     self.opts("exptid") + "-snf",

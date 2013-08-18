@@ -184,6 +184,13 @@ class Host(object):
         self.cmd("sudo rmmod sch_qfq; sudo insmod %s" % config['QFQ_PATH'])
         self.disable_ipv6()
 
+    def insmod_eyeq(self):
+        self.cmd("sudo rmmod sch_htb; sudo rmmod sch_eyeq; sudo insmod %s" % config['EYEQ_PATH'])
+        self.disable_ipv6()
+
+    def rmmod_eyeq(self):
+        self.cmd("sudo rmmod sch_eyeq")
+
     def remove_qdiscs(self):
         iface = self.get_10g_dev()
         self.cmd("sudo %s qdisc del dev %s root" % (config['TC'], iface))
@@ -233,11 +240,13 @@ class Host(object):
         c  = "sudo %s -s filter show dev %s > %s/htb-filter.txt" % (config['TC'], dev, dir)
         self.cmd(c)
 
-    def mc_add_htb_qdisc(self, mtu=1500):
+    def mc_add_htb_qdisc(self, mtu=1500, eyeq_mode=False):
         # Default qdisc class has rate limit of 100Mbit
         iface = self.get_10g_dev()
         self.remove_qdiscs()
         self.rmmod_qfq()
+        if eyeq_mode:
+            self.insmod_eyeq()
         c  = ("sudo %s qdisc add dev %s root handle 1: htb default 1;"
               % (config['TC'], iface))
         c += ("sudo %s class add dev %s classid 1:1 parent 1: "

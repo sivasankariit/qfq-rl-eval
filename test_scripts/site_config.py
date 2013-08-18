@@ -150,6 +150,7 @@ elif SITE == 'Siva-MC':
     config['SHELL_PROMPT'] = '$'
     config['TC'] = '/home/ssradhak/src/rate_limiting/iproute2/tc/tc'
     config['QFQ_PATH'] = '/home/ssradhak/src/rate_limiting/qfq-rl/sch_qfq.ko'
+    config['EYEQ_PATH'] = '/home/ssradhak/src/rate_limiting/eyeq++/sch_eyeq.ko'
     config['TRAFGEN'] = '/home/ssradhak/src/rate_limiting/trafgen/trafgen'
     config['PLOT_SCRIPTS_DIR'] = '/home/ssradhak/src/rate_limiting/qfq-rl-eval/plot'
 
