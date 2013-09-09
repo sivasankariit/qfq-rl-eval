@@ -8,9 +8,7 @@ import numpy
 import os
 import sys
 
-from McperfParser import McperfParser
 from pickleExptLogs import readPickledFile
-from expsiftUtils import readDirTagFileProperty
 
 
 parser = argparse.ArgumentParser(description='Plot mcperf latency data')
@@ -20,6 +18,22 @@ parser.add_argument('plotfile_prefix',
 parser.add_argument('--force_replot', '-f', dest='force_replot',
                     help='Replot graphs even if they already exist ',
                     action="store_true")
+
+
+# Return a CDF line from histogram data
+#
+# @hist : List of tuples representing the histogram. Each tuple contains the
+#         sample value and frequency
+def cdfLineFromHist(hist, color="blue", width=2):
+    sorted_hist = sorted(hist.items())
+    cum_sum = numpy.cumsum(map(lambda (k,v): v, sorted_hist))
+    num_samples = cum_sum[-1]
+
+    cdf_line = boomslang.Line(color=color, width=width)
+    cdf_line.xValues = map(lambda (k,v): k, sorted_hist)
+    cdf_line.yValues = map(lambda y: y * 1.0 / num_samples, cum_sum)
+
+    return cdf_line
 
 
 # Plot a CDF graph from histogram data with 4 kinds of lines
@@ -33,16 +47,10 @@ parser.add_argument('--force_replot', '-f', dest='force_replot',
 def plotCDFGraphFromHist(hist, avg, pc99, pc999,
                          xLabel, yLabel, title):
 
-    sorted_hist = sorted(hist.items())
-    cum_sum = numpy.cumsum(map(lambda (k,v): v, sorted_hist))
-    num_samples = cum_sum[-1]
-
     plot = boomslang.Plot()
 
     # Plot the CDF line
-    cdf_line = boomslang.Line(color="blue", width=2)
-    cdf_line.xValues = map(lambda (k,v): k, sorted_hist)
-    cdf_line.yValues = map(lambda y: y * 1.0 / num_samples, cum_sum)
+    cdf_line = cdfLineFromHist(hist, color="blue", width=2)
     plot.add(cdf_line)
 
     # Plot VLine for avg
