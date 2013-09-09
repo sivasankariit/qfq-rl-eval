@@ -39,18 +39,41 @@ class McperfParser:
     def parse_ops_mcperf(self):
         pat_reqr = re.compile(r'Request rate: ([0-9\.]+) req/s')
         pat_rspr = re.compile(r'Response rate: ([0-9\.]+) rsp/s')
-        self.reqr = 0
-        self.rspr = 0
+        pat_reqsize = re.compile(r'Request size \[B\]: avg ([0-9\.]+) min')
+        pat_rspsize = re.compile(r'Response size \[B\]: avg ([0-9\.]+) min')
+        pat_reqrsp = re.compile(r'Total: connections ([0-9\.]+) requests ([0-9\.]+) responses ([0-9\.]+) test-duration')
+        self.reqr = 0       # request rate
+        self.rspr = 0       # response rate
+        self.reqsize = 0    # average request size
+        self.rspsize = 0    # average response size
+        self.reqs = 0       # number of requests
+        self.rsps = 0       # number of responses
         for l in self.lines:
-            # req
+            # reqr
             m = pat_reqr.search(l)
             if m:
                 self.reqr = float(m.group(1))
-            # resp
+            # rspr
             m = pat_rspr.search(l)
             if m:
                 self.rspr = float(m.group(1))
-        return (self.reqr, self.rspr)
+            # reqsize
+            m = pat_reqsize.search(l)
+            if m:
+                self.reqsize = float(m.group(1))
+            # rspsize
+            m = pat_rspsize.search(l)
+            if m:
+                self.rspsize = float(m.group(1))
+            # reqs, rsps
+            m = pat_reqrsp.search(l)
+            if m:
+                self.reqs = int(m.group(2))
+                self.rsps = int(m.group(3))
+
+        return (self.reqr, self.rspr,
+                self.reqsize, self.rspsize,
+                self.reqs, self.rsps)
 
 
     def parse_latency_mcperf(self):
@@ -89,3 +112,19 @@ class McperfParser:
 
     def get_rspr(self):
         return self.rspr
+
+
+    def get_reqsize(self):
+        return self.reqsize
+
+
+    def get_rspsize(self):
+        return self.rspsize
+
+
+    def get_reqs(self):
+        return self.reqs
+
+
+    def get_rsps(self):
+        return self.rsps

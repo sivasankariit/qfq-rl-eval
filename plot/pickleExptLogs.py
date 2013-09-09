@@ -179,12 +179,20 @@ def pickleMcperf(mcperf_files, pickle_dir, stats_dir):
     mc_hists = []
     reqrs = []
     rsprs = []
+    reqsizes = []
+    rspsizes = []
+    reqss = []
+    rspss = []
     # Parse the mcperf log files
     for mcperf_file in mcperf_files:
         mcstats = McperfParser(mcperf_file)
         mc_hists.append(mcstats.get_hist())
         reqrs.append(mcstats.get_reqr())
         rsprs.append(mcstats.get_rspr())
+        reqsizes.append(mcstats.get_reqsize())
+        rspsizes.append(mcstats.get_rspsize())
+        reqss.append(mcstats.get_reqs())
+        rspss.append(mcstats.get_rsps())
 
     # Compute combined histogram
     agg_hist = dict()
@@ -195,6 +203,16 @@ def pickleMcperf(mcperf_files, pickle_dir, stats_dir):
     # Compute total request and response rates
     agg_reqr = sum(reqrs)
     agg_rspr = sum(rsprs)
+
+    # Compute total requests and responses
+    agg_reqs = sum(reqss)
+    agg_rsps = sum(rspss)
+
+    # Compute average request and response sizes
+    avg_reqsize = numpy.average(reqsizes, weights = reqss)
+    avg_rspsize = numpy.average(rspsizes, weights = reqss)
+    #avg_reqsize = (sum(map(lambda size, num : size * num, reqsizes, reqss)) / agg_reqs)
+    #avg_rspsize = (sum(map(lambda size, num : size * num, rspsizes, rspss)) / agg_rsps)
 
     # Pickle mcperf histogram data
     mcperf_pfile = os.path.join(pickle_dir, 'mcperf_p.txt')
@@ -215,6 +233,10 @@ def pickleMcperf(mcperf_files, pickle_dir, stats_dir):
     # Pickle mcperf latency summary
     mcperf_summary = { 'agg_reqr'   : agg_reqr,
                        'agg_rspr'   : agg_rspr,
+                       'avg_reqsize': avg_reqsize,
+                       'avg_rspsize': avg_rspsize,
+                       'agg_reqs'   : agg_reqs,
+                       'agg_rsps'   : agg_rsps,
                        'lat_avg'    : lat_avg,
                        'lat_median' : lat_median,
                        'lat_pc99'   : lat_pc99,
@@ -227,8 +249,12 @@ def pickleMcperf(mcperf_files, pickle_dir, stats_dir):
     # Write stats about memcached latencies
     mcperf_stats_file = os.path.join(stats_dir, 'mcperf.txt')
     mcperf_stats_fd = open(mcperf_stats_file, 'w')
-    mcperf_stats_fd.write('Aggregate request rate = %s\n' % str(agg_reqr))
-    mcperf_stats_fd.write('Aggregate response rate = %s\n' % str(agg_rspr))
+    mcperf_stats_fd.write('Aggregate request rate = %s req/s\n' % str(agg_reqr))
+    mcperf_stats_fd.write('Aggregate response rate = %s rsp/s\n' % str(agg_rspr))
+    mcperf_stats_fd.write('Total requests = %s\n' % str(agg_reqs))
+    mcperf_stats_fd.write('Total responses = %s\n' % str(agg_rsps))
+    mcperf_stats_fd.write('Average request size = %0.1f B\n' % avg_reqsize)
+    mcperf_stats_fd.write('Average response size = %0.1f B\n' % avg_rspsize)
     mcperf_stats_fd.write('Latency stats (usec):\n')
     mcperf_stats_fd.write('  Average = %0.1f\n' % lat_avg)
     mcperf_stats_fd.write('  Median  = %s\n' % str(lat_median))
