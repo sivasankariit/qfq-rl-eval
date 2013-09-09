@@ -30,15 +30,29 @@ def getLatencyCDF(directory):
     return cdfLineFromHist(agg_hist)
 
 
-# Returns comparison summary graph
+# Returns the value of unique property
+def getUniqueProp(unique_prop):
+    assert(len(unique_prop) == 1)
+    for prop_val_str in unique_prop:
+        prop, val = propAndVal(prop_val_str)
+        return val
+
+
+# Returns latency CDF comparison graph
 def plotMcperfLatencyCDFComparisonDirs(dir2props_dict = {}):
 
-    colors = ('y', 'g', 'c', 'r', 'm', 'b')
+    colors = ('b', 'g', 'r', 'm', 'c', 'y')
 
     # Find all the common and unique properties among all directories
     common_props, unique_props = getCommonAndUniqueProperties(dir2props_dict)
 
     plot = boomslang.Plot()
+
+    # Check if all directories have only one unique property
+    one_unique_prop = True
+    for directory in dir2props_dict:
+        if not len(unique_props[directory]) == 1:
+            oneUniqueProp = False
 
     # Iterate through directories and generate CDF lines for each of them
     for index, directory in enumerate(dir2props_dict.keys()):
@@ -47,7 +61,10 @@ def plotMcperfLatencyCDFComparisonDirs(dir2props_dict = {}):
 
         cdf_line.color = colors[index % len(colors)]
         cdf_line.width = 2
-        cdf_line.label = ",".join(unique_props[directory])
+        if one_unique_prop:
+            cdf_line.label = getUniqueProp(unique_props[directory])
+        else:
+            cdf_line.label = ",".join(unique_props[directory])
 
         plot.add(cdf_line)
 
