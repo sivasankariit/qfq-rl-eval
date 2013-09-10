@@ -22,9 +22,9 @@ parser.add_argument('-r', dest='recursive', action='store_true',
                          'each specified directory')
 
 
-LATENCY_LIMITS = (0, 50000)
-RL_ORDER = { 'htb' : 1, 'eyeq' : 2, 'qfq' : 3, 'none' : 4 }
 FOR_PAPER = True
+LATENCY_LIMITS = (0, 50) if FOR_PAPER else (0, 50000)
+RL_ORDER = { 'htb' : 1, 'eyeq' : 2, 'qfq' : 3, 'none' : 4 }
 
 
 def sortLineValSets(line_val_sets):
@@ -65,6 +65,10 @@ def getLatencyCDF(directory):
     # Read latency histogram from the mcperf pickled files
     mcperf_pfile = os.path.join(directory, 'pickled/mcperf_p.txt')
     agg_hist = readPickledFile(mcperf_pfile)
+
+    if FOR_PAPER:
+        # Convert usec sample values to msec
+        agg_hist = {k / 1000.0: v for k, v in agg_hist.items()}
 
     return cdfLineFromHist(agg_hist)
 
@@ -127,10 +131,10 @@ def plotMcperfLatencyCDFComparisonDirs(dir2props_dict = {}):
     # Set title and axes labels
     yLabel = "Fractiles"
     if FOR_PAPER:
-        xLabel = "Latency (usecs)"
+        xLabel = "Latency (msec)"
         title = ''
     else:
-        xLabel = "Memcached transaction latency (usecs)"
+        xLabel = "Memcached transaction latency (usec)"
         title = "CDF of memcached transaction latency"
     plot.setXLabel(xLabel)
     plot.setYLabel(yLabel)
@@ -289,18 +293,21 @@ def plotMcperfLatencyComparisonDirs(dir2props_dict, # dict
 
 def plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, stat='avg'):
 
+    units = 'msec' if FOR_PAPER else 'usec'
+    div = 1000.0 if FOR_PAPER else 1
+
     # Available stat functions: 'avg', 'pc99', 'pc999'
     if stat == 'avg':
-        fn_get_datapoint = lambda directory: getAvgLatency(directory)
-        yLabel = 'Average latency (usec)'
+        fn_get_datapoint = lambda directory: getAvgLatency(directory) / div
+        yLabel = 'Average latency (%s)' % units
         title = 'Memcached response latency (average)'
     elif stat == 'pc99':
-        fn_get_datapoint = lambda directory: getpc99Latency(directory)
-        yLabel = '99th perc. latency (usec)'
+        fn_get_datapoint = lambda directory: getpc99Latency(directory) / div
+        yLabel = '99th perc. latency (%s)' % units
         title = 'Memcached response latency (99th percentile)'
     elif stat == 'pc999':
-        fn_get_datapoint = lambda directory: getpc999Latency(directory)
-        yLabel = '99.9th perc. latency (usec)'
+        fn_get_datapoint = lambda directory: getpc999Latency(directory) / div
+        yLabel = '99.9th perc. latency (%s)' % units
         title = 'Memcached response latency (99.9th percentile)'
 
     if FOR_PAPER:
