@@ -38,7 +38,8 @@ pickled_files = {'sniffer' : ['burstlen_pkt.txt',
                  'mpstat' : ['mpstat_p.txt'],
                  'ethstats' : ['net_p.txt'],
                  'mpstat_mc' : ['mpstat_mc_p.txt'],
-                 'mcperf' : ['mcperf_p.txt']}
+                 'mcperf' : ['mcperf_p.txt',
+                             'hosts_p.txt']}
 stats_files = {'sniffer' : ['snf_stats.txt',
                             'pkt_snf_head20000.txt'],
                'mpstat' : ['cpu_util.txt'],
@@ -387,6 +388,12 @@ def main(argv):
         if (args.force_rewrite or
             not allFilesGenerated('mcperf', pickle_dir, stats_dir)):
 
+            # Pickle hosts info separately
+            hosts_pfile = os.path.join(pickle_dir, 'hosts_p.txt')
+            fd = open(hosts_pfile, 'wb')
+            cPickle.dump((servers, clients), fd)
+            fd.close()
+
             mcperf_files = []
             for client in clients:
                 files = glob.glob(os.path.join(args.expt_dir, 'logs',
@@ -395,7 +402,7 @@ def main(argv):
 
             pickleMcperf(mcperf_files, pickle_dir, stats_dir)
 
-        # Pickle mpstat data for clients
+        # Pickle mpstat data for clients and servers
         if (args.force_rewrite or
             not allFilesGenerated('mpstat_mc', pickle_dir, stats_dir)):
             client_mpstat_files = [ os.path.join(args.expt_dir, 'logs',
@@ -407,8 +414,6 @@ def main(argv):
 
             pickleMPStatMC(client_mpstat_files, server_mpstat_files,
                            pickle_dir, stats_dir)
-
-        # Pickle mpstat data for servers
 
 
 if __name__ == '__main__':
