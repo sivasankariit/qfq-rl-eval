@@ -24,6 +24,7 @@ parser.add_argument('-r', dest='recursive', action='store_true',
 
 LATENCY_LIMITS = (0, 50000)
 RL_ORDER = { 'htb' : 1, 'eyeq' : 2, 'qfq' : 3, 'none' : 4 }
+FOR_PAPER = True
 
 
 def sortLineValSets(line_val_sets):
@@ -124,9 +125,13 @@ def plotMcperfLatencyCDFComparisonDirs(dir2props_dict = {}):
         plot.add(cdf_line)
 
     # Set title and axes labels
-    xLabel = "Memcached transaction latency (usecs)"
     yLabel = "Fractiles"
-    title = "CDF of memcached transaction latency"
+    if FOR_PAPER:
+        xLabel = "Latency (usecs)"
+        title = ''
+    else:
+        xLabel = "Memcached transaction latency (usecs)"
+        title = "CDF of memcached transaction latency"
     plot.setXLabel(xLabel)
     plot.setYLabel(yLabel)
     plot.setTitle(title)
@@ -147,6 +152,10 @@ def plotMcperfLatencyCDFComparisonDirs(dir2props_dict = {}):
 
     # Set xLimit (max latency plotted)
     #plot.xLimits = LATENCY_LIMITS
+
+    if FOR_PAPER:
+        # Set dimensions of the plot
+        plot.setDimensions(width=4.5)
 
     return plot
 
@@ -269,7 +278,12 @@ def plotMcperfLatencyComparisonDirs(dir2props_dict, # dict
         plot.yLimits = yLimits
 
 
-    # 10. Return the plot
+    # 10. Set dimensions of the plot
+    if FOR_PAPER:
+        plot.setDimensions(width=4.5)
+
+
+    # 11. Return the plot
     return plot
 
 
@@ -288,6 +302,9 @@ def plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, stat='avg'):
         fn_get_datapoint = lambda directory: getpc999Latency(directory)
         yLabel = '99.9th perc. latency (usec)'
         title = 'Memcached response latency (99.9th percentile)'
+
+    if FOR_PAPER:
+        title = ''
 
     # Turn each directory's set of prop=val strings into a dictionary to
     # easily look up the value of a particular property for the directory
@@ -339,7 +356,7 @@ def plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, stat='avg'):
 
             fn_get_datapoint = fn_get_datapoint,
 
-            xLabel = 'Server load per tenant per client (reqs per sec)',
+            xLabel = 'Load per tenant per client (reqs/sec)',
             yLabel = yLabel,
             title = title,
             yLimits = LATENCY_LIMITS)
