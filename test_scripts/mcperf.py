@@ -10,7 +10,7 @@ from host import *
 from site_config import *
 import os
 
-MC_PREPOPULATE_TIME = 200
+MC_PREPOPULATE_TIME = 150
 
 parser = argparse.ArgumentParser(description="Memcached test for various rate limiters.")
 
@@ -173,6 +173,7 @@ class MemcachedCluster(Expt):
         cmd += "mcperf -s %s " % server_ip
         cmd += "-p %d " % port
         cmd += "--sizes d%d " % mcsize
+        cmd += "--keys u1,1000000 "
         cmd += "--num-calls %d " % N
         cmd += "--call-rate %s " % rate
         cmd += "--num-conns %d " % nconn
@@ -335,7 +336,7 @@ class MemcachedCluster(Expt):
                                           port = start_port + tenant,
                                           time = MC_PREPOPULATE_TIME,
                                           nconn = self.opts("mcnconn"),
-                                          mcrate = self.opts("mcrate"),
+                                          mcrate = 5000,
                                           mcexp = self.opts("mcexp"),
                                           workload = "set",
                                           mcsize = self.opts("mcsize"),
