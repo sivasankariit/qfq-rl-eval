@@ -246,7 +246,22 @@ def plotMcperfLatencyComparisonDirs(dir2props_dict, # dict
     return plot
 
 
-def plotMcperfAvgLatencyComparisonDirs(dir2props_dict):
+def plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, stat='avg'):
+
+    # Available stat functions: 'avg', 'pc99', 'pc999'
+    if stat == 'avg':
+        fn_get_datapoint = lambda directory: getAvgLatency(directory)
+        yLabel = 'Average latency (usec)'
+        title = 'Memcached response latency (average)'
+    elif stat == 'pc99':
+        fn_get_datapoint = lambda directory: getpc99Latency(directory)
+        yLabel = '99th perc. latency (usec)'
+        title = 'Memcached response latency (99th percentile)'
+    elif stat == 'pc999':
+        fn_get_datapoint = lambda directory: getpc999Latency(directory)
+        yLabel = '99.9th perc. latency (usec)'
+        title = 'Memcached response latency (99.9th percentile)'
+
     return plotMcperfLatencyComparisonDirs(
             dir2props_dict,
 
@@ -261,58 +276,12 @@ def plotMcperfAvgLatencyComparisonDirs(dir2props_dict):
             fn_get_xgroup_value = (lambda xgroup_val_set:
                 getUniqueProp(xgroup_val_set)),
 
-            fn_get_datapoint = lambda directory: getAvgLatency(directory),
+            fn_get_datapoint = fn_get_datapoint,
 
             xLabel = 'Load on server (reqs per sec)',
-            yLabel = 'Latency (usec)',
-            title = 'Memcached response latency (average)',
-            yLimits = (0, 200000))
-
-
-def plotMcperfpc99LatencyComparisonDirs(dir2props_dict):
-    return plotMcperfLatencyComparisonDirs(
-            dir2props_dict,
-
-            xgroup_props = ['mcrate'],
-            line_props = ['rl'],
-
-            fn_sort_lines = lambda lines: sortLineValSets(lines),
-
-            fn_get_line_label = (lambda line_val_set:
-                getUniqueProp(line_val_set)),
-
-            fn_get_xgroup_value = (lambda xgroup_val_set:
-                getUniqueProp(xgroup_val_set)),
-
-            fn_get_datapoint = lambda directory: getpc99Latency(directory),
-
-            xLabel = 'Load on server (reqs per sec)',
-            yLabel = 'Latency (usec)',
-            title = 'Memcached response latency (99th perc.)',
-            yLimits = (0, 200000))
-
-
-def plotMcperfpc999LatencyComparisonDirs(dir2props_dict):
-    return plotMcperfLatencyComparisonDirs(
-            dir2props_dict,
-
-            xgroup_props = ['mcrate'],
-            line_props = ['rl'],
-
-            fn_sort_lines = lambda lines: sortLineValSets(lines),
-
-            fn_get_line_label = (lambda line_val_set:
-                getUniqueProp(line_val_set)),
-
-            fn_get_xgroup_value = (lambda xgroup_val_set:
-                getUniqueProp(xgroup_val_set)),
-
-            fn_get_datapoint = lambda directory: getpc999Latency(directory),
-
-            xLabel = 'Load on server (reqs per sec)',
-            yLabel = 'Latency (usec)',
-            title = 'Memcached response latency (99.9th perc.)',
-            yLimits = (0, 200000))
+            yLabel = yLabel,
+            title = title,
+            yLimits = (0, 50000))
 
 
 def main(argv):
@@ -342,9 +311,9 @@ def main(argv):
 
     # Plot memcached latency comparison graph (microseconds)
     mclat_plot = plotMcperfLatencyCDFComparisonDirs(dir2props_dict)
-    #mclat_plot = plotMcperfAvgLatencyComparisonDirs(dir2props_dict)
-    #mclat_plot = plotMcperfpc99LatencyComparisonDirs(dir2props_dict)
-    #mclat_plot = plotMcperfpc999LatencyComparisonDirs(dir2props_dict)
+    #mclat_plot = plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, 'avg')
+    #mclat_plot = plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, 'pc99')
+    #mclat_plot = plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, 'pc999')
     mclat_plot.save(args.plot_filename)
 
 
