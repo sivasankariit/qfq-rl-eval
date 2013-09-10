@@ -23,12 +23,12 @@ parser.add_argument('-r', dest='recursive', action='store_true',
 
 
 LATENCY_LIMITS = (0, 50000)
+RL_ORDER = { 'htb' : 1, 'eyeq' : 2, 'qfq' : 3, 'none' : 4 }
 
 
 def sortLineValSets(line_val_sets):
-    rl_order = { 'htb' : 1, 'qfq' : 2, 'eyeq' : 3, 'none' : 4}
     line_val_sets.sort(key = lambda line_val_set:
-                       rl_order[getUniqueProp(line_val_set)]),
+                       RL_ORDER[getUniqueProp(line_val_set)]),
 
 
 def serverLoadFromMcrate(mcrate_val_set, mctenants = 1, numclients = 1):
@@ -97,12 +97,20 @@ def plotMcperfLatencyCDFComparisonDirs(dir2props_dict = {}):
 
     # Check if all directories have only one unique property
     one_unique_prop = True
+
     for directory in dir2props_dict:
         if not len(unique_props[directory]) == 1:
-            oneUniqueProp = False
+            one_unique_prop = False
+
+    # Sort the expt directories if only one unique property is available
+    expt_dirs = dir2props_dict.keys()
+    if one_unique_prop:
+        expt_dirs.sort(key = lambda directory:
+                       RL_ORDER.get(getUniqueProp(unique_props[directory]),
+                                    len(RL_ORDER) + 1))
 
     # Iterate through directories and generate CDF lines for each of them
-    for index, directory in enumerate(dir2props_dict.keys()):
+    for index, directory in enumerate(expt_dirs):
 
         cdf_line = getLatencyCDF(directory)
 
