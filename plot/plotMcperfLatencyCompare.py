@@ -22,6 +22,9 @@ parser.add_argument('-r', dest='recursive', action='store_true',
                          'each specified directory')
 
 
+LATENCY_LIMITS = (0, 50000)
+
+
 def sortLineValSets(line_val_sets):
     rl_order = { 'htb' : 1, 'qfq' : 2, 'eyeq' : 3, 'none' : 4}
     line_val_sets.sort(key = lambda line_val_set:
@@ -133,6 +136,9 @@ def plotMcperfLatencyCDFComparisonDirs(dir2props_dict = {}):
     plot.grid.style = "dotted"
     plot.grid.lineWidth = 0.8
     plot.grid.visible = True
+
+    # Set xLimit (max latency plotted)
+    #plot.xLimits = LATENCY_LIMITS
 
     return plot
 
@@ -328,7 +334,7 @@ def plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, stat='avg'):
             xLabel = 'Server load per tenant per client (reqs per sec)',
             yLabel = yLabel,
             title = title,
-            yLimits = (0, 50000))
+            yLimits = LATENCY_LIMITS)
 
 
 def main(argv):
