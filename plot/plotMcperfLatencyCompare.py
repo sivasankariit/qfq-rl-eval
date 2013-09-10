@@ -303,9 +303,12 @@ def plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, stat='avg'):
     numclients = numclients_vals.pop()
 
     # Function to convert mcrate value to total server load
-    fn_get_xgroup_value = functools.partial(serverLoadFromMcrate,
-                                            mctenants = mctenants,
-                                            numclients = numclients)
+    # fn_get_xgroup_value = functools.partial(serverLoadFromMcrate,
+    #                                         mctenants = mctenants,
+    #                                         numclients = numclients)
+    # Load per tenant per client
+    fn_get_xgroup_value = (lambda mcrate_val_set:
+        int(getUniqueProp(mcrate_val_set)))
 
     return plotMcperfLatencyComparisonDirs(
             dir2props_dict,
@@ -322,7 +325,7 @@ def plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, stat='avg'):
 
             fn_get_datapoint = fn_get_datapoint,
 
-            xLabel = 'Total server load (reqs per sec)',
+            xLabel = 'Server load per tenant per client (reqs per sec)',
             yLabel = yLabel,
             title = title,
             yLimits = (0, 50000))
@@ -354,8 +357,8 @@ def main(argv):
     dir2props_dict = getDir2PropsDict(expt_dirs)
 
     # Plot memcached latency comparison graph (microseconds)
-    #mclat_plot = plotMcperfLatencyCDFComparisonDirs(dir2props_dict)
-    mclat_plot = plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, 'avg')
+    mclat_plot = plotMcperfLatencyCDFComparisonDirs(dir2props_dict)
+    #mclat_plot = plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, 'avg')
     #mclat_plot = plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, 'pc99')
     #mclat_plot = plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, 'pc999')
     mclat_plot.save(args.plot_filename)
