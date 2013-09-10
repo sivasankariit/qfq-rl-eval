@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import functools
 import matplotlib
 matplotlib.rcParams['backend'] = 'Agg'
 import boomslang
@@ -25,6 +26,10 @@ def sortLineValSets(line_val_sets):
     rl_order = { 'htb' : 1, 'qfq' : 2, 'eyeq' : 3, 'none' : 4}
     line_val_sets.sort(key = lambda line_val_set:
                        rl_order[getUniqueProp(line_val_set)]),
+
+
+def serverLoadFromMcrate(mcrate_val_set, mctenants = 1, numclients = 1):
+    return int(getUniqueProp(mcrate_val_set)) * mctenants * numclients
 
 
 def getAvgLatency(directory):
@@ -58,6 +63,14 @@ def getLatencyCDF(directory):
     agg_hist = readPickledFile(mcperf_pfile)
 
     return cdfLineFromHist(agg_hist)
+
+
+# Find the client and server machines used for the experiment
+def getServersAndClients(directory):
+    # Read the hosts info pickle file
+    hosts_pfile = os.path.join(directory, 'pickled/hosts_p.txt')
+    (servers, clients) = readPickledFile(hosts_pfile)
+    return (servers, clients)
 
 
 # Returns the value of unique property
@@ -262,6 +275,38 @@ def plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, stat='avg'):
         yLabel = '99.9th perc. latency (usec)'
         title = 'Memcached response latency (99.9th percentile)'
 
+    # Turn each directory's set of prop=val strings into a dictionary to
+    # easily look up the value of a particular property for the directory
+    dir2prop2val_dict = getDir2Prop2ValDict(dir2props_dict)
+
+    # Make sure that all the experiments had the same number of client/server
+    # machines and number of tenants.
+    mctenants_vals = set()
+    trafgentenants_vals = set()
+    for directory in dir2props_dict.iterkeys():
+        mctenants_vals.add(dir2prop2val_dict[directory]['mctenants'])
+        trafgentenants_vals.add(dir2prop2val_dict[directory]['trafgentenants'])
+    assert(len(mctenants_vals) == 1)
+    assert(len(trafgentenants_vals) == 1)
+    mctenants = int(mctenants_vals.pop())
+
+    # Make sure that all the experiments had the same number of client and
+    # server machines
+    numclients_vals = set()
+    numservers_vals = set()
+    for directory in dir2props_dict.iterkeys():
+        servers, clients = getServersAndClients(directory)
+        numclients_vals.add(len(clients))
+        numservers_vals.add(len(servers))
+    assert(len(numclients_vals) == 1)
+    assert(len(numservers_vals) == 1)
+    numclients = numclients_vals.pop()
+
+    # Function to convert mcrate value to total server load
+    fn_get_xgroup_value = functools.partial(serverLoadFromMcrate,
+                                            mctenants = mctenants,
+                                            numclients = numclients)
+
     return plotMcperfLatencyComparisonDirs(
             dir2props_dict,
 
@@ -273,12 +318,11 @@ def plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, stat='avg'):
             fn_get_line_label = (lambda line_val_set:
                 getUniqueProp(line_val_set)),
 
-            fn_get_xgroup_value = (lambda xgroup_val_set:
-                getUniqueProp(xgroup_val_set)),
+            fn_get_xgroup_value = fn_get_xgroup_value,
 
             fn_get_datapoint = fn_get_datapoint,
 
-            xLabel = 'Load on server (reqs per sec)',
+            xLabel = 'Total server load (reqs per sec)',
             yLabel = yLabel,
             title = title,
             yLimits = (0, 50000))
@@ -310,8 +354,8 @@ def main(argv):
     dir2props_dict = getDir2PropsDict(expt_dirs)
 
     # Plot memcached latency comparison graph (microseconds)
-    mclat_plot = plotMcperfLatencyCDFComparisonDirs(dir2props_dict)
-    #mclat_plot = plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, 'avg')
+    #mclat_plot = plotMcperfLatencyCDFComparisonDirs(dir2props_dict)
+    mclat_plot = plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, 'avg')
     #mclat_plot = plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, 'pc99')
     #mclat_plot = plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, 'pc999')
     mclat_plot.save(args.plot_filename)
