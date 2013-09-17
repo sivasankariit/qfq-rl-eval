@@ -278,6 +278,133 @@ def plotComparisonDirs(dir2props_dict, # dict
             unique_cluster_labels, label_clusterdir_dict, layout)
 
 
+# Returns the comparison of mcperf latency summaries. Each experiment's latency
+# distribution is reduced to a single datapoint, Eg. avg, pc99, pc999 etc.
+def plotLineComparisonDirs(dir2props_dict, # dict
+                           xgroup_props,   # list. Props to group along x axis
+                           line_props,     # list. Properties of line
+                           fn_sort_lines,
+                           fn_get_line_label,
+                           fn_get_xgroup_value,  # xValue. No separate label
+                           fn_get_datapoint,     # yValue
+                           xLabel,
+                           yLabel,
+                           title,
+                           yLimits = None):
+
+    # 1. Turn each directory's set of prop=val strings into a dictionary to
+    #     easily look up the value of a particular property for the directory
+    dir2prop2val_dict = getDir2Prop2ValDict(dir2props_dict)
+
+
+    # 2. Find all the common and unique properties among all directories
+    common_props, unique_props = getCommonAndUniqueProperties(dir2props_dict)
+
+
+    # 3A. Find all unique values of line properties (each is separate line)
+    line2dir_dict = getDirGroupsByProperty(dir2props_dict, line_props,
+                                           ignore = False)
+    unique_lines = line2dir_dict.keys()
+    # 3B. Sort the lines
+    fn_sort_lines(unique_lines)
+
+
+    # 4. Find all unique values of the xgroup properties
+    xgroup2dir_dict = getDirGroupsByProperty(dir2props_dict, xgroup_props,
+                                             ignore = False)
+    unique_xgroups = xgroup2dir_dict.keys()
+
+
+    # 5. For each unique line,
+    #    For each unique xgroup,
+    #        Create an individual datapoints list
+    datapoints_dict = {}
+    for line in unique_lines:
+        datapoints_dict[line] = {}
+        for xgroup in unique_xgroups:
+            datapoints_dict[line][xgroup] = []
+
+
+    # 6. Visit each directory and populate the corresponding datapoints list for
+    #    that directory.
+    for directory, prop_vals in dir2props_dict.iteritems():
+        # Find the line and xgroup of the directory
+        line = onlyIncludeProps(prop_vals, line_props)
+        xgroup = onlyIncludeProps(prop_vals, xgroup_props)
+
+        # Compute the datapoint for the directory
+        datapoint = fn_get_datapoint(directory)
+
+        # Add the data point
+        datapoints_dict[line][xgroup].append(datapoint)
+
+
+    # 7. For each unique line prop, create a line.
+    #    Set the label and color for the line
+    colors = ('b', 'g', 'r', 'm', 'c', 'y')
+    all_lines_dict = {}
+    for index, line in enumerate(unique_lines):
+        l = boomslang.Line()
+        l.color = colors[index % len(colors)]
+        l.label = fn_get_line_label(line)
+        l.width = 2
+        l.marker = 'o'
+        all_lines_dict[line] = l
+
+
+    # 8. Compute average and stddev for each (line, xgroup) combination. This
+    #    represents the avg and stddev across multiple trials.
+    #    Add these to the corresponding lines.
+    for line, line_dict in datapoints_dict.iteritems():
+        for xgroup, datapoints in line_dict.iteritems():
+            avg = numpy.average(datapoints)
+            stddev = numpy.std(datapoints)
+
+            # Append xValue, yValue, yError to the line
+            xValue = fn_get_xgroup_value(xgroup)
+            all_lines_dict[line].xValues.append(xValue)
+            all_lines_dict[line].yValues.append(avg)
+            all_lines_dict[line].yErrors.append(stddev)
+
+
+    # 9. Create the plot and add all the lines
+    plot = boomslang.Plot()
+    for line in unique_lines:
+        plot.add(all_lines_dict[line])
+
+    # 9A. Set title and axes labels
+    plot.setXLabel(xLabel)
+    plot.setYLabel(yLabel)
+    plot.setTitle(title)
+    plot.hasLegend()
+
+    # 9B. Font size
+    plot.setLegendLabelSize("small")
+    plot.setTitleSize("small")
+    plot.setAxesLabelSize("small")
+    plot.setXTickLabelSize("small")
+    plot.setYTickLabelSize("small")
+
+    # 9C. Grid
+    plot.grid.color = "lightgray"
+    plot.grid.style = "dotted"
+    plot.grid.lineWidth = 0.8
+    plot.grid.visible = True
+
+    # 9D. yLimits
+    if yLimits:
+        plot.yLimits = yLimits
+
+
+    # 10. Set dimensions of the plot
+    if FOR_PAPER:
+        plot.setDimensions(width=4.5)
+
+
+    # 11. Return the plot
+    return plot
+
+
 ###############################################################
 # Additional utility functions for plotting comparison graphs #
 ###############################################################
