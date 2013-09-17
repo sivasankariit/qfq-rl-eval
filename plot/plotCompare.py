@@ -64,20 +64,20 @@ def barGraph(xValues, yValues, yErrors,
 # - clusterdir_dict indicates the directory grouping that was actually used to
 #   plot the graph.
 # - PlotLayout is the actual graph with multiple subplots.
-def plotComparisonDirs(dir2props_dict, # dict
-                       subplot_props,  # list
-                       cluster_props,  # list
-                       trial_props,    # list
-                       fn_sort_subplots,
-                       fn_sort_clusters,
-                       fn_sort_majorgroups,
-                       fn_get_subplot_title,
-                       fn_get_cluster_label,
-                       fn_get_majorgroup_label,
-                       fn_get_datapoint,
-                       xLabel,
-                       yLabel,
-                       layout = None):
+def plotClusterBarComparisonDirs(dir2props_dict, # dict
+                                 subplot_props,  # list
+                                 cluster_props,  # list
+                                 trial_props,    # list
+                                 fn_sort_subplots,
+                                 fn_sort_clusters,
+                                 fn_sort_majorgroups,
+                                 fn_get_subplot_title,
+                                 fn_get_cluster_label,
+                                 fn_get_majorgroup_label,
+                                 fn_get_datapoint,
+                                 xLabel,
+                                 yLabel,
+                                 layout = None):
 
     # 1. Turn each directory's set of prop=val strings into a dictionary to
     #     easily look up the value of a particular property for the directory

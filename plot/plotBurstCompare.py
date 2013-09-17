@@ -7,7 +7,7 @@ import sys
 
 from pickleExptLogs import readPickledFile
 from expsiftUtils import *
-from plotCompare import plotComparisonDirs
+from plotCompare import plotClusterBarComparisonDirs
 from plotCompare import getRateMbpsFromPropValSet
 from plotCompare import getNClassesFromPropValSet
 from plotCompare import sortRateValSets
@@ -59,7 +59,7 @@ def getPc99BurstLenUsec(directory):
 # Returns the burstlen comparison summary graph
 def plotBurstLenComparisonDirs(dir2props_dict, fn_get_datapoint,
                                yLabel, layout=None):
-    return plotComparisonDirs(
+    return plotClusterBarComparisonDirs(
             dir2props_dict,
 
             subplot_props = ['rate_mbps'],

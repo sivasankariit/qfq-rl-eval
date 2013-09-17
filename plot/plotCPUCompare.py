@@ -6,7 +6,7 @@ import sys
 
 from pickleExptLogs import readPickledFile
 from expsiftUtils import *
-from plotCompare import plotComparisonDirs
+from plotCompare import plotClusterBarComparisonDirs
 from plotCompare import getRateMbpsFromPropValSet
 from plotCompare import getNClassesFromPropValSet
 from plotCompare import sortRateValSets
@@ -31,7 +31,7 @@ def getKernelCPUUtil(directory):
 
 # Returns the CPU comparison summary graph
 def plotCPUComparisonDirs(dir2props_dict = {}):
-    return plotComparisonDirs(
+    return plotClusterBarComparisonDirs(
             dir2props_dict,
 
             subplot_props = ['rate_mbps'],
