@@ -26,6 +26,7 @@ parser.add_argument('-r', dest='recursive', action='store_true',
 FOR_PAPER = True
 LATENCY_LIMITS = (0, 50) if FOR_PAPER else (0, 50000)
 RL_ORDER = { 'htb' : 1, 'eyeq' : 2, 'qfq' : 3, 'none' : 4 }
+RL_LABEL = { 'htb' : 'htb', 'eyeq' : 'eyeq', 'qfq' : 'nicpic', 'none' : 'none' }
 
 
 def sortLineValSets(line_val_sets):
@@ -123,7 +124,8 @@ def plotMcperfLatencyCDFComparisonDirs(dir2props_dict = {}):
         cdf_line.color = colors[index % len(colors)]
         cdf_line.width = 2
         if one_unique_prop:
-            cdf_line.label = getUniqueProp(unique_props[directory])
+            unique_prop = getUniqueProp(unique_props[directory])
+            cdf_line.label = RL_LABEL.get(unique_prop, unique_prop)
         else:
             cdf_line.label = ",".join(unique_props[directory])
 
@@ -231,7 +233,7 @@ def plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, stat='avg'):
             fn_sort_lines = lambda lines: sortLineValSets(lines),
 
             fn_get_line_label = (lambda line_val_set:
-                getUniqueProp(line_val_set)),
+                RL_LABEL[getUniqueProp(line_val_set)]),
 
             fn_get_xgroup_value = fn_get_xgroup_value,
 
