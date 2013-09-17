@@ -290,7 +290,8 @@ def plotLineComparisonDirs(dir2props_dict, # dict
                            xLabel,
                            yLabel,
                            title,
-                           yLimits = None):
+                           yLimits = None,
+                           for_paper = False):
 
     # 1. Turn each directory's set of prop=val strings into a dictionary to
     #     easily look up the value of a particular property for the directory
@@ -397,7 +398,7 @@ def plotLineComparisonDirs(dir2props_dict, # dict
 
 
     # 10. Set dimensions of the plot
-    if FOR_PAPER:
+    if for_paper:
         plot.setDimensions(width=4.5)
 
 

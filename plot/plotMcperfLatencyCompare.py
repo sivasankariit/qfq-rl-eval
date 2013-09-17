@@ -240,7 +240,8 @@ def plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, stat='avg'):
             xLabel = 'Load per tenant per client (reqs/sec)',
             yLabel = yLabel,
             title = title,
-            yLimits = LATENCY_LIMITS)
+            yLimits = LATENCY_LIMITS,
+            for_paper = FOR_PAPER)
 
 
 def main(argv):
