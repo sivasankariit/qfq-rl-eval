@@ -187,12 +187,13 @@ class MemcachedCluster(Expt):
         hclient.cmd_async(cmd)
 
 
-    def start_trafgen_client(self, hsrc, dst_ip, proto="udp",
-                             port=6000, mtu=1500, cpus=[1]):
+    def start_trafgen_client(self, hsrc, dst_ip, tenant_id="0_1", proto="udp",
+                             port=6000, mtu=1500, cpus=[1], dir="/tmp"):
         cmd = "taskset -c %s " % ",".join([str(x) for x in cpus])
         cmd += "%s -c %s -%s " % (config["TRAFGEN"], dst_ip, proto)
         cmd += "-start_port %s -num_ports 1 " % port
-        cmd += "-send_size 1472 -sk_prio 1 -mtu %s > /dev/null 2>&1" % mtu
+        cmd += "-send_size 1472 -sk_prio 1 -mtu %s " % mtu
+        cmd += "> %s/trafgen_client-t%s-%s.txt 2>&1" % (dir, tenant_id, dst_ip)
         hsrc.cmd_async(cmd)
 
 
@@ -494,6 +495,7 @@ class MemcachedCluster(Expt):
         # instance on the source host. This is required since trafgen currently
         # only supports a single destination per instance.
         for tenant in xrange(0, self.opts("trafgentenants")):
+            tenant_id = "%d_%d" % (tenant, self.opts("trafgentenants"))
             for hsrc in hlist.lst:
                 for hdst in hlist.lst:
                     if hsrc == hdst:
@@ -501,11 +503,13 @@ class MemcachedCluster(Expt):
                     dst_ip = socket.gethostbyname(hdst.hostname())
 
                     self.start_trafgen_client(hsrc, dst_ip,
+                                              tenant_id = tenant_id,
                                               proto=self.opts("trafgenproto"),
                                               port = start_port + 1000 + tenant,
                                               mtu = self.opts("mtu"),
                                               cpus = [avail_cpus[assigned_cpus %
-                                                      len(avail_cpus)]])
+                                                      len(avail_cpus)]],
+                                              dir = e('logs'))
             assigned_cpus += 1
 
         # Start mcperf clients to generate requests. For each (tenant, server)
