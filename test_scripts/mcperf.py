@@ -196,10 +196,12 @@ class MemcachedCluster(Expt):
         hsrc.cmd_async(cmd)
 
 
-    def start_trafgen_server(self, hlist, proto="udp", port=6000, cpus=[1]):
+    def start_trafgen_server(self, hlist, tenant_id="0_1",
+                             proto="udp", port=6000, cpus=[1],
+                             dir="/tmp"):
         cmd  = "taskset -c %s " % ",".join([str(x) for x in cpus])
         cmd += "%s -s -%s -start_port %s " % (config["TRAFGEN"], proto, port)
-        cmd += "-num_ports 1 > /dev/null 2>&1"
+        cmd += "-num_ports 1 > %s/trafgen_server-t%s.txt 2>&1" % (dir,tenant_id)
         for h in hlist.lst:
             h.cmd_async(cmd)
 
@@ -299,10 +301,13 @@ class MemcachedCluster(Expt):
         # Start trafgen servers/sinks - one instance for each tenant, pinned to
         # a different CPU core on each host
         for tenant in xrange(0, self.opts("trafgentenants")):
+            tenant_id = "%d_%d" % (tenant, self.opts("trafgentenants"))
             self.start_trafgen_server(hlist, proto=self.opts("trafgenproto"),
+                                      tenant_id = tenant_id,
                                       port = start_port + 1000 + tenant,
                                       cpus = [avail_cpus[assigned_cpus %
-                                                         len(avail_cpus)]])
+                                                         len(avail_cpus)]],
+                                      dir=e('logs'))
             assigned_cpus += 1
 
         # If mcworkload=get, first run mcperf with set requests to full up the
