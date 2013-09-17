@@ -15,6 +15,7 @@ from SnifferParser import SnifferParser
 from MPStatParser import MPStatParser
 from EthstatsParser import EthstatsParser
 from McperfParser import McperfParser
+from TrafgenParser import TrafgenParser
 
 from McperfParser import parseHostsFile
 from expsiftUtils import readDirTagFileProperty
@@ -38,6 +39,7 @@ pickled_files = {'sniffer' : ['burstlen_pkt.txt',
                  'mpstat' : ['mpstat_p.txt'],
                  'ethstats' : ['net_p.txt'],
                  'mpstat_mc' : ['mpstat_mc_p.txt'],
+                 'trafgen' : ['trafgen_p.txt'],
                  'mcperf' : ['mcperf_p.txt',
                              'hosts_p.txt']}
 stats_files = {'sniffer' : ['snf_stats.txt',
@@ -45,6 +47,7 @@ stats_files = {'sniffer' : ['snf_stats.txt',
                'mpstat' : ['cpu_util.txt'],
                'ethstats' : ['net_util.txt'],
                'mpstat_mc' : ['cpu_util.txt'],
+               'trafgen' : ['trafgen.txt'],
                'mcperf' : ['mcperf.txt']}
 
 memcached_workloads = ['memcached_set', 'memcached_get',
@@ -311,6 +314,51 @@ def pickleMPStatMC(client_mpstat_files, server_mpstat_files,
     cpu_stats_fd.close()
 
 
+def pickleTrafgen(hosts, logs_dir, pickle_dir, stats_dir):
+
+    host_tx_goodput = dict()
+    host_rx_goodput = dict()
+
+    # Iterate through hosts and collect stats
+    for host in hosts:
+        # Make a list of trafgen log files for the host
+        trafgen_server_files = glob.glob(os.path.join(logs_dir, host,
+                                         'trafgen_server-t*.txt'))
+        trafgen_client_files = glob.glob(os.path.join(logs_dir, host,
+                                         'trafgen_client-t*-*.txt'))
+
+        tx_rate_mbps = 0.0
+        rx_rate_mbps = 0.0
+        # Parse the trafgen client log files
+        for trafgen_file in trafgen_client_files:
+            trafgenstats = TrafgenParser(trafgen_file)
+            tx_rate_mbps += trafgenstats.get_avg_rate()
+
+        # Parse the trafgen server log files
+        for trafgen_file in trafgen_server_files:
+            trafgenstats = TrafgenParser(trafgen_file)
+            rx_rate_mbps += trafgenstats.get_avg_rate()
+
+        host_tx_goodput[host] = tx_rate_mbps
+        host_rx_goodput[host] = rx_rate_mbps
+
+    # Pickle trafgen goodput data
+    trafgen_pfile = os.path.join(pickle_dir, 'trafgen_p.txt')
+    fd = open(trafgen_pfile, 'wb')
+    cPickle.dump((host_tx_goodput, host_rx_goodput), fd)
+    fd.close()
+
+    # Write stats about network utilization
+    trafgen_stats_file = os.path.join(stats_dir, 'trafgen.txt')
+    trafgen_stats_fd = open(trafgen_stats_file, 'w')
+    trafgen_stats_fd.write('Trafgen goodput by host (Mbps):\n')
+    for host in hosts:
+        trafgen_stats_fd.write('%s:\n' % host)
+        trafgen_stats_fd.write('  Tx: %.2f\n' % host_tx_goodput[host])
+        trafgen_stats_fd.write('  Rx: %.2f\n' % host_rx_goodput[host])
+    trafgen_stats_fd.close()
+
+
 def allFilesGenerated(category, pickle_dir, stats_dir):
     res = True
     for filename in pickled_files[category]:
@@ -397,7 +445,7 @@ def main(argv):
             mcperf_files = []
             for client in clients:
                 files = glob.glob(os.path.join(args.expt_dir, 'logs',
-                                    client, 'mcperf-t*-c*-*.txt'))
+                                  client, 'mcperf-t*-c*-*.txt'))
                 mcperf_files.extend(files)
 
             pickleMcperf(mcperf_files, pickle_dir, stats_dir)
@@ -414,6 +462,13 @@ def main(argv):
 
             pickleMPStatMC(client_mpstat_files, server_mpstat_files,
                            pickle_dir, stats_dir)
+
+        # Pickle trafgen data
+        if (args.force_rewrite or
+            not allFilesGenerated('trafgen', pickle_dir, stats_dir)):
+            hosts = clients + servers
+            pickleTrafgen(hosts, os.path.join(args.expt_dir, 'logs'),
+                          pickle_dir, stats_dir)
 
 
 if __name__ == '__main__':
