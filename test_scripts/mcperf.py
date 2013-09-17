@@ -554,6 +554,8 @@ class MemcachedCluster(Expt):
         self.hlist.stop_mpstat()
         self.hlist.killall("memcached mcperf")
         self.hlist.stop_trafgen()
+        self.log(T.colored("... Waiting for qdiscs to drain", "blue"))
+        progress(5)
         self.hlist.remove_qdiscs()
         self.hlist.rmmod_qfq()
         self.hlist.rmmod_eyeq()
