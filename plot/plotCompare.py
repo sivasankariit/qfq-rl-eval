@@ -290,6 +290,7 @@ def plotLineComparisonDirs(dir2props_dict, # dict
                            xLabel,
                            yLabel,
                            title,
+                           xLimits = None,
                            yLimits = None,
                            for_paper = False):
 
@@ -392,7 +393,9 @@ def plotLineComparisonDirs(dir2props_dict, # dict
     plot.grid.lineWidth = 0.8
     plot.grid.visible = True
 
-    # 9D. yLimits
+    # 9D. xLimits, yLimits
+    if xLimits:
+        plot.xLimits = xLimits
     if yLimits:
         plot.yLimits = yLimits
 

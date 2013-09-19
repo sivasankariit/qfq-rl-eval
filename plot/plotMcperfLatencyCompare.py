@@ -24,7 +24,8 @@ parser.add_argument('-r', dest='recursive', action='store_true',
 
 
 FOR_PAPER = True
-LATENCY_LIMITS = (0, 50) if FOR_PAPER else (0, 50000)
+LATENCY_LIMITS = (0, 20) if FOR_PAPER else (0, 50000)
+LOAD_LIMITS = (1000, 7000)
 RL_ORDER = { 'htb' : 1, 'eyeq' : 2, 'qfq' : 3, 'none' : 4 }
 RL_LABEL = { 'htb' : 'htb', 'eyeq' : 'eyeq', 'qfq' : 'nicpic', 'none' : 'none' }
 
@@ -158,7 +159,7 @@ def plotMcperfLatencyCDFComparisonDirs(dir2props_dict = {}):
     plot.grid.visible = True
 
     # Set xLimit (max latency plotted)
-    #plot.xLimits = LATENCY_LIMITS
+    plot.xLimits = LATENCY_LIMITS
 
     if FOR_PAPER:
         # Set dimensions of the plot
@@ -242,6 +243,7 @@ def plotMcperfLatencyComparisonDirsWrapper(dir2props_dict, stat='avg'):
             xLabel = 'Load per tenant per client (reqs/sec)',
             yLabel = yLabel,
             title = title,
+            xLimits = LOAD_LIMITS,
             yLimits = LATENCY_LIMITS,
             for_paper = FOR_PAPER)
 
