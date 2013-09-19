@@ -180,23 +180,92 @@ def pickleEthstats(ethstats_file, pickle_dir, stats_dir):
 
 def pickleMcperf(mcperf_files, pickle_dir, stats_dir):
 
-    mc_hists = []
-    reqrs = []
-    rsprs = []
-    reqsizes = []
-    rspsizes = []
-    reqss = []
-    rspss = []
-    # Parse the mcperf log files
-    for mcperf_file in mcperf_files:
-        mcstats = McperfParser(mcperf_file)
-        mc_hists.append(mcstats.get_hist())
-        reqrs.append(mcstats.get_reqr())
-        rsprs.append(mcstats.get_rspr())
-        reqsizes.append(mcstats.get_reqsize())
-        rspsizes.append(mcstats.get_rspsize())
-        reqss.append(mcstats.get_reqs())
-        rspss.append(mcstats.get_rsps())
+    agg_mc_hists = []
+    agg_reqrs = []
+    agg_rsprs = []
+    agg_reqsizes = []
+    agg_rspsizes = []
+    agg_reqss = []
+    agg_rspss = []
+    cli_mcperf_summary = {}
+
+    # Parse the mcperf log files and compute per client summaries
+    for (client, client_files) in mcperf_files:
+        mc_hists = []
+        reqrs = []
+        rsprs = []
+        reqsizes = []
+        rspsizes = []
+        reqss = []
+        rspss = []
+        for mcperf_file in client_files:
+            mcstats = McperfParser(mcperf_file)
+            mc_hists.append(mcstats.get_hist())
+            reqrs.append(mcstats.get_reqr())
+            rsprs.append(mcstats.get_rspr())
+            reqsizes.append(mcstats.get_reqsize())
+            rspsizes.append(mcstats.get_rspsize())
+            reqss.append(mcstats.get_reqs())
+            rspss.append(mcstats.get_rsps())
+        (agg_hist,
+         mcperf_summary) = summarizeMcStats(mc_hists, reqrs, rsprs,
+                                            reqsizes, rspsizes,
+                                            reqss, rspss)
+        cli_mcperf_summary[client] = mcperf_summary
+        agg_mc_hists.append(agg_hist)
+        agg_reqrs.append(mcperf_summary['agg_reqr'])
+        agg_rsprs.append(mcperf_summary['agg_rspr'])
+        agg_reqsizes.append(mcperf_summary['avg_reqsize'])
+        agg_rspsizes.append(mcperf_summary['avg_rspsize'])
+        agg_reqss.append(mcperf_summary['agg_reqs'])
+        agg_rspss.append(mcperf_summary['agg_rsps'])
+
+    # Compute overall latency summary
+    (agg_hist,
+     agg_mcperf_summary) = summarizeMcStats(agg_mc_hists,
+                                            agg_reqrs, agg_rsprs,
+                                            agg_reqsizes, agg_rspsizes,
+                                            agg_reqss, agg_rspss)
+
+    # Pickle mcperf histogram data
+    mcperf_pfile = os.path.join(pickle_dir, 'mcperf_p.txt')
+    fd = open(mcperf_pfile, 'wb')
+    cPickle.dump(agg_hist, fd)
+    fd.close()
+
+    # Pickle mcperf latency summary
+    mcperf_summary_pfile = os.path.join(pickle_dir, 'mcperf_summary_p.txt')
+    fd = open(mcperf_summary_pfile, 'wb')
+    cPickle.dump(agg_mcperf_summary, fd)
+    fd.close()
+
+    # Write stats about memcached latencies
+    mcperf_stats_file = os.path.join(stats_dir, 'mcperf.txt')
+    mcperf_stats_fd = open(mcperf_stats_file, 'w')
+    writeMcperfSummary(mcperf_stats_fd, agg_mcperf_summary)
+    mcperf_stats_fd.write('--- Per client statistics ---')
+    for client, _ in mcperf_files:
+        mcperf_stats_fd.write('---- %s ----\n' % client)
+        writeMcperfSummary(mcperf_stats_fd, cli_mcperf_summary[client])
+    mcperf_stats_fd.close()
+
+
+def writeMcperfSummary(fd, summary):
+    fd.write('Aggregate request rate = %s req/s\n' % str(summary['agg_reqr']))
+    fd.write('Aggregate response rate = %s rsp/s\n' % str(summary['agg_rspr']))
+    fd.write('Total requests = %s\n' % str(summary['agg_reqs']))
+    fd.write('Total responses = %s\n' % str(summary['agg_rsps']))
+    fd.write('Average request size = %0.1f B\n' % summary['avg_reqsize'])
+    fd.write('Average response size = %0.1f B\n' % summary['avg_rspsize'])
+    fd.write('Latency stats (usec):\n')
+    fd.write('  Average = %0.1f\n' % summary['lat_avg'])
+    fd.write('  Median  = %s\n' % str(summary['lat_median']))
+    fd.write('  pc99    = %s\n' % str(summary['lat_pc99']))
+    fd.write('  pc999   = %s\n' % str(summary['lat_pc999']))
+
+
+def summarizeMcStats(mc_hists, reqrs, rsprs,
+                     reqsizes, rspsizes, reqss, rspss):
 
     # Compute combined histogram
     agg_hist = dict()
@@ -215,14 +284,6 @@ def pickleMcperf(mcperf_files, pickle_dir, stats_dir):
     # Compute average request and response sizes
     avg_reqsize = numpy.average(reqsizes, weights = reqss)
     avg_rspsize = numpy.average(rspsizes, weights = reqss)
-    #avg_reqsize = (sum(map(lambda size, num : size * num, reqsizes, reqss)) / agg_reqs)
-    #avg_rspsize = (sum(map(lambda size, num : size * num, rspsizes, rspss)) / agg_rsps)
-
-    # Pickle mcperf histogram data
-    mcperf_pfile = os.path.join(pickle_dir, 'mcperf_p.txt')
-    fd = open(mcperf_pfile, 'wb')
-    cPickle.dump(agg_hist, fd)
-    fd.close()
 
     # Compute CDF and find avg, median, pc99, pc999 latencies
     sorted_hist = sorted(agg_hist.items())
@@ -245,26 +306,7 @@ def pickleMcperf(mcperf_files, pickle_dir, stats_dir):
                        'lat_median' : lat_median,
                        'lat_pc99'   : lat_pc99,
                        'lat_pc999'  : lat_pc999 }
-    mcperf_summary_pfile = os.path.join(pickle_dir, 'mcperf_summary_p.txt')
-    fd = open(mcperf_summary_pfile, 'wb')
-    cPickle.dump(mcperf_summary, fd)
-    fd.close()
-
-    # Write stats about memcached latencies
-    mcperf_stats_file = os.path.join(stats_dir, 'mcperf.txt')
-    mcperf_stats_fd = open(mcperf_stats_file, 'w')
-    mcperf_stats_fd.write('Aggregate request rate = %s req/s\n' % str(agg_reqr))
-    mcperf_stats_fd.write('Aggregate response rate = %s rsp/s\n' % str(agg_rspr))
-    mcperf_stats_fd.write('Total requests = %s\n' % str(agg_reqs))
-    mcperf_stats_fd.write('Total responses = %s\n' % str(agg_rsps))
-    mcperf_stats_fd.write('Average request size = %0.1f B\n' % avg_reqsize)
-    mcperf_stats_fd.write('Average response size = %0.1f B\n' % avg_rspsize)
-    mcperf_stats_fd.write('Latency stats (usec):\n')
-    mcperf_stats_fd.write('  Average = %0.1f\n' % lat_avg)
-    mcperf_stats_fd.write('  Median  = %s\n' % str(lat_median))
-    mcperf_stats_fd.write('  pc99    = %s\n' % str(lat_pc99))
-    mcperf_stats_fd.write('  pc999   = %s\n' % str(lat_pc999))
-    mcperf_stats_fd.close()
+    return agg_hist, mcperf_summary
 
 
 def pickleMPStatMC(client_mpstat_files, server_mpstat_files,
@@ -446,7 +488,7 @@ def main(argv):
             for client in clients:
                 files = glob.glob(os.path.join(args.expt_dir, 'logs',
                                   client, 'mcperf-t*-c*-*.txt'))
-                mcperf_files.extend(files)
+                mcperf_files.append((client, files))
 
             pickleMcperf(mcperf_files, pickle_dir, stats_dir)
 
