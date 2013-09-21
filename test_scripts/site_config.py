@@ -158,21 +158,23 @@ elif SITE == 'Siva-MC':
     config['DEFAULT_MC_SERVERS'] = ['192.168.2.64']
     config['DEFAULT_MC_CLIENTS'] = ['192.168.2.80',
                                     '192.168.2.63',
-                                    '192.168.2.65',
+                                    #'192.168.2.65',
                                     '192.168.2.67',
                                     '192.168.2.108',
                                     '192.168.2.109',
-                                    '192.168.2.110']
+                                    '192.168.2.110',
+                                    '192.168.2.107']
 
     # Interface details for each node
     config['DEFAULT_DEV'] = { '192.168.2.64'  : 'eth1',
                               '192.168.2.80'  : 'eth2',
                               '192.168.2.63'  : 'eth1',
-                              '192.168.2.65'  : 'eth1',
+                              #'192.168.2.65'  : 'eth1',
                               '192.168.2.67'  : 'eth1',
                               '192.168.2.108' : 'eth1',
                               '192.168.2.109' : 'eth1',
-                              '192.168.2.110' : 'eth1' }
+                              '192.168.2.110' : 'eth1',
+                              '192.168.2.107' : 'eth1' }
 
     # NIC details
     config['NIC_VENDOR'] = 'Intel'
@@ -184,7 +186,8 @@ elif SITE == 'Siva-MC':
 
     # CPUs available for tenants
     config['NUM_CPUS'] = 16
-    config['EXCLUDE_CPUS'] = [2, 10]
+    config['EXCLUDE_CPUS'] = [2, 10, 11,13]
+    #config['EXCLUDE_CPUS'] = [2, 10]
 
     # Sniffer host with Myri10G sniffer
     config['SNIFFER_HOST'] = ''
