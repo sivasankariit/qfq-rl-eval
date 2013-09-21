@@ -24,6 +24,7 @@ parser.add_argument('-r', dest='recursive', action='store_true',
 
 FOR_PAPER = True
 THROUGHPUT_LIMITS = (0, 5) if FOR_PAPER else (0, 5000)
+LOAD_LIMITS = (1000, 5000)
 RL_ORDER = { 'htb' : 1, 'eyeq' : 2, 'qfq' : 3, 'none' : 4 }
 RL_LABEL = { 'htb' : 'htb', 'eyeq' : 'eyeq', 'qfq' : 'nicpic', 'none' : 'none' }
 
@@ -132,6 +133,7 @@ def plotTrafgenThroughputComparisonDirs(dir2props_dict):
             xLabel = 'Load per tenant per client (reqs/sec)',
             yLabel = yLabel,
             title = title,
+            xLimits = LOAD_LIMITS,
             yLimits = THROUGHPUT_LIMITS,
             for_paper = FOR_PAPER)
 
