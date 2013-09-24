@@ -26,7 +26,7 @@ FOR_PAPER = True
 THROUGHPUT_LIMITS = (0, 5) if FOR_PAPER else (0, 5000)
 LOAD_LIMITS = (1000, 5000)
 RL_ORDER = { 'htb' : 1, 'eyeq' : 2, 'qfq' : 3, 'none' : 4 }
-RL_LABEL = { 'htb' : 'htb', 'eyeq' : 'eyeq', 'qfq' : 'nicpic', 'none' : 'none' }
+RL_LABEL = { 'htb' : 'htb', 'eyeq' : 'ptb', 'qfq' : 'nicpic', 'none' : 'none' }
 
 
 def sortLineValSets(line_val_sets):
