@@ -27,7 +27,7 @@ FOR_PAPER = True
 LATENCY_LIMITS = (0, 20) if FOR_PAPER else (0, 50000)
 LOAD_LIMITS = (1000, 7000)
 RL_ORDER = { 'htb' : 1, 'eyeq' : 2, 'qfq' : 3, 'none' : 4 }
-RL_LABEL = { 'htb' : 'htb', 'eyeq' : 'ptb', 'qfq' : 'nicpic', 'none' : 'none' }
+RL_LABEL = { 'htb' : 'HTB', 'eyeq' : 'PTB', 'qfq' : 'SENIC', 'none' : 'none' }
 
 
 def sortLineValSets(line_val_sets):
