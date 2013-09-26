@@ -165,6 +165,21 @@ def main(argv):
 
     # Plot trafgen throughput comparison graph
     trafgenrate_plot = plotTrafgenThroughputComparisonDirs(dir2props_dict)
+
+    if FOR_PAPER:
+        # Set xLabel
+        trafgenrate_plot.setXLabel("Load (rpstc)")
+
+        # Tick labels
+        xmin,xmax = LOAD_LIMITS
+        xTickLabels = range(xmin, xmax+1, 1000)
+        ticklabels_line = boomslang.Line()
+        ticklabels_line.xTickLabels = xTickLabels
+        ticklabels_line.xTickLabelPoints = xTickLabels
+        trafgenrate_plot.add(ticklabels_line)
+
+        # Label sizes
+        trafgenrate_plot.setXTickLabelSize("small")
     trafgenrate_plot.save(args.plot_filename)
 
 
