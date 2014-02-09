@@ -8,10 +8,13 @@ import re
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', default=1, type=float, help="interval")
+parser.add_argument('--dir', default="tx", choices=["tx", "rx"], help="which direction?")
 parser.add_argument('-p', default=False, action="store_true", help="store only +ves")
 FLAGS = parser.parse_args()
 
 COUNTER_FILE = '/sys/class/infiniband/mlx4_0/ports/1/counters/port_xmit_data'
+if FLAGS.dir == "rx":
+    COUNTER_FILE = '/sys/class/infiniband/mlx4_0/ports/1/counters/port_rcv_data'
 U32_MAX = (1 << 32) - 1
 
 def sigint_handler(*args):

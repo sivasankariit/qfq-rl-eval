@@ -14,14 +14,13 @@ parser.add_argument('-c', default="10.0.0.2", help="client mode connect to serve
 parser.add_argument('-i', default=1, type=float, help="interval")
 parser.add_argument('-q', default=1, type=float, help="number of queue pairs")
 parser.add_argument('-T', default=64, type=int, help="size of TX queue")
+parser.add_argument('--cmd', default="ib_write_bw", choices=["ib_read_bw", "ib_write_bw"], help="Which command to use for test?")
 parser.add_argument('--msize', default=64, type=int, help="message size")
 parser.add_argument('--quiet', default=False)
 
 FLAGS = parser.parse_args()
 
 START_PORT = 18000
-COUNTER_FILE = '/sys/class/infiniband/mlx4_0/ports/1/counters/port_xmit_data'
-U32_MAX = (1 << 32) - 1
 OUTPUT = ""
 NUM_CPUS = 8
 pat_spaces = re.compile(r'\s+')
@@ -29,11 +28,19 @@ pat_spaces = re.compile(r'\s+')
 if FLAGS.quiet:
     OUTPUT = "> /dev/null 2>&1"
 
+def get_qpairs():
+    qpairs = ''
+    if 'read' in FLAGS.cmd:
+        qpairs = "-o %d" % FLAGS.q
+    else:
+        qpairs = '-q %d' % FLAGS.q
+    return qpairs
+
 def start_servers():
     procs = []
     for i in xrange(FLAGS.p):
-        cmd = "taskset -c %d ib_write_bw -x 0 -p %d -n %d -s %d -q %d -t %d %s" % \
-            (i % NUM_CPUS, START_PORT + i, FLAGS.n, FLAGS.msize, FLAGS.q, FLAGS.T, OUTPUT)
+        cmd = "taskset -c %d %s -x 0 -p %d -n %d -s %d %s -t %d %s" % \
+            (i % NUM_CPUS, FLAGS.cmd, START_PORT + i, FLAGS.n, FLAGS.msize, get_qpairs(), FLAGS.T, OUTPUT)
         proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, bufsize=65536)
         procs.append(proc)
     return procs
@@ -41,14 +48,14 @@ def start_servers():
 def start_clients():
     procs = []
     for i in xrange(FLAGS.p):
-        cmd = "taskset -c %d ib_write_bw -x 0 -p %d -n %d -s %d -q %d -t %d %s %s" % \
-            (i % NUM_CPUS, START_PORT + i, FLAGS.n, FLAGS.msize, FLAGS.q, FLAGS.T, FLAGS.c, OUTPUT)
+        cmd = "taskset -c %d %s -x 0 -p %d -n %d -s %d %s -t %d %s %s" % \
+            (i % NUM_CPUS, FLAGS.cmd, START_PORT + i, FLAGS.n, FLAGS.msize, get_qpairs(), FLAGS.T, FLAGS.c, OUTPUT)
         proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, bufsize=65536)
         procs.append(proc)
     return procs
 
 def cleanup():
-    os.system("killall -9 ib_write_bw > /dev/null 2>&1")
+    os.system("killall -9 ib_write_cmd ib_read_cmd > /dev/null 2>&1")
 
 def sigint_handler(*args):
     cleanup()
@@ -68,28 +75,6 @@ def main():
     else:
         procs = start_clients()
 
-    prev = None
-    prev_t = time.time()
-    """
-    with open(COUNTER_FILE, 'r') as f:
-        while True:
-            t = time.time()
-            dt = t - prev_t
-            curr = read_counter(f)
-            if prev is None:
-                prev = curr
-
-            diff = curr - prev
-            if diff < 0:
-                diff += U32_MAX # Wrapped around.  It can happen at most once as long as FLAGS.i <= 1s.
-
-            # http://community.mellanox.com/thread/1124
-            diff *= 4.0
-            print "%.3f %d %.3f" % (t, curr, diff * 8.0 / dt / 1e9)
-            time.sleep(FLAGS.i)
-            prev = curr
-            prev_t = t
-    """
     avges = []
     for p in procs:
         p.wait()
