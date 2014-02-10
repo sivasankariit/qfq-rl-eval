@@ -17,6 +17,16 @@ at 64Bytes.  Perfect linear scalability, even beyond what your NIC can do! :)
 So, ALWAYS use the packet/byte counters from sysfs which the rocestats.py
 and pps.py utilities use.
 
+Example run (compile the utilities from the git repo above)
+Server: triton01
+Client: triton02
+
+Server: for i in {1..4}; do (sudo ./ib_read_bw -t 1024 -p $((18000+$i)) -q 1 -m 1024 &); done
+Client: for i in {1..4}; do (sudo ./ib_read_bw triton01 --run_infinitely -s 64 -p $((18000+$i)) -q 1 -m 1024 &); done
+
+Client: python rocestats.py --dir rx
+Client: python pps.py --dir rx
+
 --
 Vimal <j.vimal@gmail.com>
 
